@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # pypreprocessor.py
 
-import traceback, os
+from subprocess import call
+import traceback, sys, os
 
 class preprocessor:
     def __init__(self):
         self.defines = []
-        self.output = "output.py"
+        self.input = os.path.join(sys.path[0],sys.argv[0])
+        self.output = ''
+        self.process = True
 
     # the #define directive
     def define(self, define):
@@ -17,10 +20,6 @@ class preprocessor:
             return True
         else:
             return False
-
-    def printDefines(self):
-        for define in self.defines:
-            print(define)
             
     # the #undef directive
     def undefine(self, define):
@@ -33,27 +32,41 @@ class preprocessor:
         ifcondition = ''
         squelch = True
 
-        input_file = open('example.py','r')
+        input_file = open(self.input,'r')
         try:
             for line in input_file:
-                # remove #define directives
+                # squelch preprocessor specific code on the first
+                # pass to prevent preprocessor infinite loop
+                if 'pypreprocessor' in line:
+                    outputBuffer += '#' + line
+                    continue
+            
+                # handle #define directives
                 if line[:7] == '#define':
                     self.define(line.split()[1])
-
+                    outputBuffer += line
+                    continue
+                
+                # handle #undef directives                
                 if line[:6] == '#undef':
                     self.undefine(line.split()[1])
-
+                    outputBuffer += line
+                    continue
+                
                 # handle #ifdef directives
                 if ifblock == False:
+                    # open an ifblock
                     if line[:6] == '#ifdef':
                         ifblock = True
                 else:
+                    # close an ifblock 
                     if line[:6] == '#endif':
                         ifblock = False
                         ifcondition = ''
                         squelch = True
 
                 if ifblock == True:
+                    # evaluate and process an #ifdef
                     if line[:6] == '#ifdef':
                         ifcondition = line.split()[1]
                         if self.searchDefines(ifcondition):
@@ -62,7 +75,7 @@ class preprocessor:
                             squelch = True
                         outputBuffer += line
                         continue
-                    
+                    # evaluate and process the #else
                     if line[:5] == '#else':
                         if not self.searchDefines(ifcondition):
                             squelch = False
@@ -70,31 +83,39 @@ class preprocessor:
                             squelch = True
                         outputBuffer += line
                         continue
-                    
+                
+                # comment out code that isn't supposed to run 
                 if ifblock == True and squelch == True:
-                    outputBuffer += '#'
-                    outputBuffer += line
+                    outputBuffer += '#' + line
                 else:
                     outputBuffer += line
-
-
-            
         finally:
             input_file.close()
         
-        output_file = open(self.output, 'w')
+        # output to file
+        if self.output != '':
+            self.process = False
+            output_file = open(self.output, 'w')            
+        # create temp file to execute
+        else:
+            self.output = self.input + '.tmp'
+            output_file = open(self.output, 'w')
+            
         try:
             output_file.write(outputBuffer)
+            print(outputBuffer)
+            print(self.defines)
         finally:
             output_file.close()
 
-#        try:
-#            exec outputBuffer
-#        except Exception:
-#            traceback.print_exc()
-#            return 1
+        # run the script
+        if self.process == True:
+            ret = call(['python', self.output])
+            if ret == 0:
+                os.remove(self.output)
 
-        print(outputBuffer)
-        self.printDefines()
+        # break execution so python doesn't
+        # run the rest of the pre-processed code    
+        sys.exit(0)
 
 pypreprocessor = preprocessor()
