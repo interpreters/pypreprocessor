@@ -3,40 +3,45 @@
 
 from pypreprocessor import pypreprocessor
 import sys
-
-version = sys.version[:3]
-if version.split('.')[0] == '2':
-    pypreprocessor.defines.append('python2')
-    pass
-elif version.split('.')[0] == '3':
-    pypreprocessor.defines.append('python3')
-    pass
-else:
-    print('python' + version.split('.')[0] + ' not supported') 
-    sys.exit(1)
     
-#pypreprocessor.output = "output_file.py"
-pypreprocessor.runcmd = "python"
 pypreprocessor.parse()
 
-#define def1
-
-#define asda
-
-#define adsafa
-
-#define asda
-
-#undef asda
-
-#define asda
-
-#ifdef def1
-print('this is defined')
-#ifdef defkjh
-print('this is defined')
-#ifdef asda
-print('some stuff')
+print('#define test:')
+#define testdefine
+#ifdef testdefine
+print('this should print')
 #else
-print('blah blah')
+print('this shouldn\'t print')
+#endif
+print('')
+print('#undef test:')
+#undef testdefine
+#ifdef testdefine
+print('this shouldn\'t print')
+#else
+print('this should print')
+#endif
+print('')
+print('#ifdef test:')
+#define testif
+#define testif2
+#ifdef testif
+print('this should print')
+#ifdef testnotif
+print('this shouldn\'t print')
+#ifdef testif2
+print('this should print')
+#else
+print('this shouldn\'t print')
+#endif
+print('')
+print('#else test:')
+#ifdef foo
+print('this shouldn\'t print')
+#ifdef bar
+print('this shouldn\'t print')
+#ifdef baz
+print('this shouldn\'t print')
+#else
+print('this should print')
 #endif
