@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # py2and3.py
 
-from pypreprocessor import pypreprocessor
 import sys
+from pypreprocessor import pypreprocessor
 
 if sys.version[:3].split('.')[0] == '2':
     pypreprocessor.defines.append('python2')
