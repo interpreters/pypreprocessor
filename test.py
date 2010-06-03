@@ -1,47 +1,66 @@
 #!/usr/bin/env python
 # test.py
 
-from pypreprocessor import pypreprocessor
 import sys
-    
+from pypreprocessor import pypreprocessor    
+
 pypreprocessor.parse()
 
-print('#define test:')
+print('Testing Python ' + sys.version[:3] + ':')
+
+tests = []
+
+# #define test
 #define testdefine
 #ifdef testdefine
-print('this should print')
+tests += ['#define: passed']
 #else
-print('this shouldn\'t print')
+tests += ['#define: failed']
 #endif
-print('')
-print('#undef test:')
-#undef testdefine
-#ifdef testdefine
-print('this shouldn\'t print')
+
+# #undef test
+#define testundef
+#undef testundef
+#ifdef testundef
+tests += ['#undef: failed']
 #else
-print('this should print')
+tests += ['#undef: passed']
 #endif
-print('')
-print('#ifdef test:')
-#define testif
+
+# #ifdef test
+iftest = []
+#define testif1
 #define testif2
-#ifdef testif
-print('this should print')
+#ifdef testif1
+iftest += [0]
 #ifdef testnotif
-print('this shouldn\'t print')
+iftest += [1]
 #ifdef testif2
-print('this should print')
+iftest += [0]
 #else
-print('this shouldn\'t print')
+iftest += [1]
 #endif
-print('')
-print('#else test:')
+if iftest == [0, 0]:
+    tests += ['#ifdef: passed']
+else:
+    tests += ['#ifdef: failed']
+    
+# #else test
+elsetest = []
 #ifdef foo
-print('this shouldn\'t print')
+elsetest += [1]
 #ifdef bar
-print('this shouldn\'t print')
+elsetest += [1]
 #ifdef baz
-print('this shouldn\'t print')
+elsetest += [1]
 #else
-print('this should print')
+elsetest += [0]
 #endif
+if 1 in elsetest:
+    tests += ['#else: failed']
+else:
+    tests += ['#else: passed']
+
+# print the results
+for test in tests:
+    print(test)
