@@ -1,3 +1,5 @@
 syntax: glob
 *.pyc
 glob:output_file.py
+glob:MANIFEST
+glob:RELEASE.txt
