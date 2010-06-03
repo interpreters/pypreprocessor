@@ -1,28 +1,30 @@
 #!/usr/bin/env python
 # pypreprocessor.py
 
-from subprocess import call
-import traceback, sys, os
+import sys
+import os
 
 class preprocessor:
     def __init__(self):
         self.defines = []
         self.input = os.path.join(sys.path[0],sys.argv[0])
         self.output = ''
+        self.outputBuffer = ''
+        self.removeMeta = False
 
     # the #define directive
     def define(self, define):
         self.defines.append(define)
 
-    def searchDefines(self, define):
+    def search_defines(self, define):
         if define in self.defines:
             return True
         else:
             return False
             
     # the #ifdef directive
-    def compareDefinesAndConditions(self, defines, conditions):
-        # if both lists are empty (else = true)
+    def compare_defines_and_conditions(self, defines, conditions):
+        # if defines and conditions lists have no intersecting values (ie. else = true)
         if not [val for val in defines if val in conditions]:
             return True
         else:
@@ -30,29 +32,31 @@ class preprocessor:
             
     # the #undef directive
     def undefine(self, define):
+        # re-map the defines list excluding the define specified in the args
         self.defines[:] = [x for x in self.defines if x != define]
 
     # evaluate
-    def evalDef(self, line): 
+    def eval_pre(self, line): 
         # squelch preprocessor specific code on the first
         # pass to prevent preprocessor infinite loop
+        # return values are (squelch, metadata)
         if 'pypreprocessor' in line:
-            return True
+            return True, True
         # handle #define directives
         if line[:7] == '#define':
             self.define(line.split()[1])
-            return False
+            return False, True
         # handle #undef directives                
         if line[:6] == '#undef':
             self.undefine(line.split()[1])
-            return False
+            return False, True
         # handle #endif directives 
         if line[:6] == '#endif':
             self.ifblock = False
             self.ifcondition = ''
             self.ifconditions = []
             self.evalsquelch = True
-            return False
+            return False, True
         # handle #ifdef directives
         if line[:6] == '#ifdef':
             self.ifblock = True
@@ -60,56 +64,57 @@ class preprocessor:
             self.ifconditions.append(line.split()[1])
         
         # process the ifblock
-        if self.ifblock == True:
+        if self.ifblock is True:
             # evaluate and process an #ifdef
             if line[:6] == '#ifdef':
-                if self.searchDefines(self.ifcondition):
+                if self.search_defines(self.ifcondition):
                     self.evalsquelch = False
                 else:
                     self.evalsquelch = True
-                return False
+                return False, True
             # evaluate and process the #else
             elif line[:5] == '#else':
-                if self.compareDefinesAndConditions(self.defines, self.ifconditions):
+                if self.compare_defines_and_conditions(self.defines, self.ifconditions):
                     self.evalsquelch = False
                 else:
                     self.evalsquelch = True
-                return False
+                return False, True
             else:
-                return self.evalsquelch
+                return self.evalsquelch, True
         else:
-            return False
+            return False, False
           
     # parse
     def parse(self):
-        outputBuffer = ''
         # open the input file
         input_file = open(self.input,'r')
-        try:
-            self.ifblock = False
-            self.ifcondition = ''
-            self.ifconditions = []
-            self.evalsquelch = True
+        self.ifblock = False
+        self.ifcondition = ''
+        self.ifconditions = []
+        self.evalsquelch = True
         
+        try:
             # process the input file
             for line in input_file:
-                
-                squelch = self.evalDef(line)
-
-                if squelch == True:
-                    outputBuffer += '#' + line
+                # to squelch or not to squelch
+                squelch, metaData = self.eval_pre(line)
+                # process and output
+                if self.removeMeta is True and metaData is True:
                     continue
-                if squelch == False:
-                    outputBuffer += line
+                if squelch is True:
+                    self.outputBuffer += '#' + line
+                    continue
+                if squelch is False:
+                    self.outputBuffer += line
                     continue
         finally:
             input_file.close()
         
-        # open file for output
+        # open file for output (no auto-run)
         if self.output != '':
             self.run = False
             output_file = open(self.output, 'w')            
-        # open tmp file for output
+        # open tmp file for output (auto-run)
         else:
             self.run = True
             self.output = self.input + '.tmp'
@@ -117,7 +122,7 @@ class preprocessor:
             
         # write post-processed code to file 
         try:
-            output_file.write(outputBuffer)
+            output_file.write(self.outputBuffer)
         finally:
             output_file.close()
 
