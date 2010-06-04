@@ -2,7 +2,7 @@
 # test.py
 
 import sys
-from pypreprocessor import pypreprocessor    
+from pypreprocessor import pypreprocessor
 
 pypreprocessor.parse()
 
@@ -44,7 +44,7 @@ if iftest == [0, 0]:
     tests += ['#ifdef: passed']
 else:
     tests += ['#ifdef: failed']
-    
+
 # #else test
 elsetest = []
 #ifdef foo
@@ -60,6 +60,16 @@ if 1 in elsetest:
     tests += ['#else: failed']
 else:
     tests += ['#else: passed']
+
+# #exclude test
+excludetest = []
+#exclude
+excludetest += [1]
+#endexclude
+if 1 in excludetest:
+    tests += ['#exclude: failed']
+else:
+    tests += ['#exclude: passed']
 
 # print the results
 for test in tests:
