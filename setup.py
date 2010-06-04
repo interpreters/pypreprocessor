@@ -5,7 +5,7 @@ from distutils.core import setup
 setup(
     name = "pypreprocessor",
     py_modules = ['pypreprocessor'],
-    version = "0.1.0",
+    version = "0.2.0",
     description = "Run c-style preprocessor directives in python modules",
     author = "Evan Plaice",
     author_email = "evanplaice@gmail.com",
