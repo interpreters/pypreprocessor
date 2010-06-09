@@ -1,6 +1,5 @@
 syntax: glob
 *.pyc
-output_file.py
 MANIFEST
-RELEASE.txt
 ./Examples/pypreprocessor.py
+./Releases
