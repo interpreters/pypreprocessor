@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # pypreprocessor.py
 
+__author__ = 'Evan Plaice'
+__version__ = '0.3.0'
+
 import sys
 import os
 import traceback
+import imp
 
 class preprocessor:
     def __init__(self):
@@ -19,6 +23,7 @@ class preprocessor:
         self.__ifcondition = ''
         self.__ifconditions = []
         self.__evalsquelch = True
+        self.__outputBuffer = ''
 
     # the #define directive
     def define(self, define):
@@ -131,12 +136,20 @@ class preprocessor:
         print('SyntaxError: Invalid ' + directive + ' directive')
         sys.exit(1)
 
+    def rewrite_traceback(self):
+        trace = traceback.format_exc().splitlines()
+        index = 0
+        for line in trace:
+            if index == (len(trace) - 2):
+                print(line.replace("<string>", self.input))
+            else:
+                print(line)
+            index += 1
+    
     # parsing/processing
     def parse(self):
         # open the input file
         input_file = open(self.input,'r')
-        outputBuffer = ''
-
         try:
             # process the input file
             for line in input_file:
@@ -148,14 +161,17 @@ class preprocessor:
                     if metaData is True or squelch is True:
                         continue
                 if squelch is True:
-                    outputBuffer += '#' + line
+                    self.__outputBuffer += '#' + line
                     continue
                 if squelch is False:
-                    outputBuffer += line
+                    self.__outputBuffer += line
                     continue
         finally:
             input_file.close()
+        self.post_process()
 
+    # postprocessor
+    def post_process(self):
         # open file for output (no auto-run)
         if self.output != '':
             self.run = False
@@ -165,31 +181,48 @@ class preprocessor:
             self.run = True
             self.output = self.input + '.tmp'
             output_file = open(self.output, 'w')
-
         # write post-processed code to file
         try:
-            output_file.write(outputBuffer)
+            output_file.write(self.__outputBuffer)
         finally:
             output_file.close()
-
         # run the post-processed code
         if self.run == True:
-            try:
-                exec(open(self.output,"rb").read())
-            except:
-                trace = traceback.format_exc().splitlines()
-                index = 0
-                for line in trace:
-                    if index == (len(trace) - 2):
-                        print(line.replace("<string>", self.input))
-                    else:
-                        print(line)
-                    index += 1
-            finally:
-                os.remove(self.output)
-
+            # if there's an import lock override it
+            if imp.lock_held():
+                self.import_override()
+            else:
+                self.on_the_fly()
         # break execution so python doesn't
         # run the rest of the pre-processed code
         sys.exit(0)
 
+    # postprocessor - override an import
+    def import_override(self):
+        try:
+            print('PyProcessor currently does not support libraries')
+            print('Work is being done to resolve this as soon as possible')
+            sys.exit(1)
+            # TODO: Override the library import here
+            #imp.release_lock()
+            #imp.acquire_lock()
+            #sys.path.append(os.path.dirname(self.output))
+            #tmpModule = __import__(os.path.basename(self.output))
+            #sys.modules['BeautifulSoup'] = tmpModule
+            #imp.reload('BeautifulSoup')
+        except:
+            self.rewrite_traceback()
+        finally:
+            del sys.path[-1]
+            os.remove(self.output)
+
+    # postprocessor - on-the-fly execution
+    def on_the_fly(self):
+        try:
+            exec(open(self.output,"rb").read())
+        except:
+            self.rewrite_traceback()
+        finally:
+            os.remove(self.output)
+     
 pypreprocessor = preprocessor()
