@@ -2,15 +2,17 @@
 # pypreprocessor's setup.py
 
 from distutils.core import setup
+from pypreprocessor import __version__, __author__
+
 setup(
     name = "pypreprocessor",
     py_modules = ['pypreprocessor'],
-    version = "0.2.0",
+    version = __version__,
     description = "Run c-style preprocessor directives in python modules",
-    author = "Evan Plaice",
+    author = __author__,
     author_email = "evanplaice@gmail.com",
     url = "http://code.google.com/p/pypreprocessor/",
-    license = "MIT",
+    license = open('LICENSE.txt').read(),
     keywords = ["python", "preprocessor", "meta"],
     platforms = "all",
     classifiers = [
@@ -20,7 +22,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.0",
         "Programming Language :: Python :: 3.1",
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Environment :: Other Environment",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
