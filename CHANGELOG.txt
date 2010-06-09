@@ -1,0 +1,16 @@
+This file is included for completeness
+
+To see the full changelog for pypreprocessor.py visit:
+http://code.google.com/p/pypreprocessor/wiki/ChangeLog
+
+Why isn't the full changelog included in the release?
+1. Maintaining multiple copies of the changelog may result in
+ stale/inconsistent/outdated information.
+2. It's much easier to maintain the history of a changelog's edits
+ by using a wiki. 
+3. Release packages should be as small as physically possible
+ therefore it doesn't make sense to add a file that grows with
+ each release while adding no value to the source.
+4. The pypreprocessor wiki itself is revision-controlled under its
+ own repository on google code. Therefore, it makes more sense to
+ keep all the documentation for the project together in one place.
