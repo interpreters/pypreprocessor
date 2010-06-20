@@ -13,7 +13,7 @@ class preprocessor:
     def __init__(self):
         # public variables
         self.defines = []
-        self.input = os.path.join(sys.path[0],sys.argv[0])
+        self.input = sys.argv[0]
         self.output = ''
         self.removeMeta = False
         # private variables
@@ -49,7 +49,7 @@ class preprocessor:
         self.defines[:] = [x for x in self.defines if x != define]
 
     # evaluate
-    def eval_pre(self, line):
+    def lexer(self, line):
     # return values are (squelch, metadata)
         if self.__ifblock is False and self.__excludeblock is False:
             # squelch the preprocessor parse on the first
@@ -135,7 +135,6 @@ class preprocessor:
         print('File: "' + self.input + '", line ' + str(self.__linenum))
         print('SyntaxError: Invalid ' + directive + ' directive')
         sys.exit(1)
-
     def rewrite_traceback(self):
         trace = traceback.format_exc().splitlines()
         index = 0
@@ -149,13 +148,13 @@ class preprocessor:
     # parsing/processing
     def parse(self):
         # open the input file
-        input_file = open(self.input,'r')
+        input_file = open(os.path.join(self.input),'r')
         try:
             # process the input file
             for line in input_file:
                 self.__linenum += 1
                 # to squelch or not to squelch
-                squelch, metaData = self.eval_pre(line)
+                squelch, metaData = self.lexer(line)
                 # process and output
                 if self.removeMeta is True: 
                     if metaData is True or squelch is True:
@@ -170,51 +169,49 @@ class preprocessor:
             input_file.close()
         self.post_process()
 
-    # postprocessor
+    # post-processor
     def post_process(self):
-        # open file for output (no auto-run)
-        if self.output != '':
-            self.run = False
-            output_file = open(self.output, 'w')
-        # open tmp file for output (auto-run)
-        else:
-            self.run = True
-            self.output = self.input + '.tmp'
-            output_file = open(self.output, 'w')
-        # write post-processed code to file
         try:
+            # open file for output (no auto-run)
+            if self.output != '':
+                self.run = False
+                output_file = open(self.output, 'w')           
+            # open tmp file
+            else:
+                self.run = True
+                self.output = 'tmp_' + os.path.basename(self.input)
+                output_file = open(self.output, 'w')
+            # write post-processed code to file
             output_file.write(self.__outputBuffer)
         finally:
-            output_file.close()
-        # run the post-processed code
-        if self.run == True:
-            # if there's an import lock override it
-            if imp.lock_held():
-                self.import_override()
+            output_file.close()            
+        # resolve postprocess stage depending on the mode
+        if self.run == False:
+            sys.exit(0)
+        else:    
+            # if this module is loaded as a library override the import
+            if imp.lock_held() is True:
+                    self.override_import()
             else:
                 self.on_the_fly()
-        # break execution so python doesn't
-        # run the rest of the pre-processed code
-        sys.exit(0)
+                # break execution so python doesn't
+                # run the rest of the pre-processed code
+                sys.exit(0)
 
     # postprocessor - override an import
-    def import_override(self):
+    def override_import(self):
         try:
-            print('PyProcessor currently does not support libraries')
-            print('Work is being done to resolve this as soon as possible')
-            sys.exit(1)
-            # TODO: Override the library import here
-            #imp.release_lock()
-            #imp.acquire_lock()
-            #sys.path.append(os.path.dirname(self.output))
-            #tmpModule = __import__(os.path.basename(self.output))
-            #sys.modules['BeautifulSoup'] = tmpModule
-            #imp.reload('BeautifulSoup')
+            moduleName = self.input.split('.')[0]
+            tmpModuleName = self.output.split('.')[0]
+            del sys.modules[moduleName]
+            sys.modules[tmpModuleName] = __import__(tmpModuleName)
+            sys.modules[moduleName] = __import__(tmpModuleName)
         except:
             self.rewrite_traceback()
-        finally:
-            del sys.path[-1]
+        finally: 
+            # remove tmp (.py & .pyc) files
             os.remove(self.output)
+            os.remove(self.output + 'c')
 
     # postprocessor - on-the-fly execution
     def on_the_fly(self):
@@ -223,6 +220,7 @@ class preprocessor:
         except:
             self.rewrite_traceback()
         finally:
+            # remove tmp file
             os.remove(self.output)
      
 pypreprocessor = preprocessor()
