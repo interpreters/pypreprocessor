@@ -1,5 +1,5 @@
 syntax: glob
 *.pyc
 MANIFEST
-./Examples/pypreprocessor.py
-./Releases
+./examples/pypreprocessor.py
+./releases
