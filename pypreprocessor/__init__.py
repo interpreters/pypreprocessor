@@ -2,7 +2,7 @@
 # pypreprocessor.py
 
 __author__ = 'Evan Plaice'
-__version__ = '0.4.0'
+__version__ = '0.5.0'
 
 import sys
 import os
@@ -144,7 +144,7 @@ class preprocessor:
             else:
                 print(line)
             index += 1
-    
+
     # parsing/processing
     def parse(self):
         # open the input file
@@ -156,7 +156,7 @@ class preprocessor:
                 # to squelch or not to squelch
                 squelch, metaData = self.lexer(line)
                 # process and output
-                if self.removeMeta is True: 
+                if self.removeMeta is True:
                     if metaData is True or squelch is True:
                         continue
                 if squelch is True:
@@ -175,7 +175,7 @@ class preprocessor:
             # open file for output (no auto-run)
             if self.output != '':
                 self.run = False
-                output_file = open(self.output, 'w')           
+                output_file = open(self.output, 'w')
             # open tmp file
             else:
                 self.run = True
@@ -184,11 +184,11 @@ class preprocessor:
             # write post-processed code to file
             output_file.write(self.__outputBuffer)
         finally:
-            output_file.close()            
+            output_file.close()
         # resolve postprocess stage depending on the mode
         if self.run == False:
             sys.exit(0)
-        else:    
+        else:
             # if this module is loaded as a library override the import
             if imp.lock_held() is True:
                     self.override_import()
@@ -208,7 +208,7 @@ class preprocessor:
             sys.modules[moduleName] = __import__(tmpModuleName)
         except:
             self.rewrite_traceback()
-        finally: 
+        finally:
             # remove tmp (.py & .pyc) files
             os.remove(self.output)
             os.remove(self.output + 'c')
@@ -222,5 +222,5 @@ class preprocessor:
         finally:
             # remove tmp file
             os.remove(self.output)
-     
+
 pypreprocessor = preprocessor()

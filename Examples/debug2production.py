@@ -12,12 +12,12 @@ This file has 3 different modes:
         Run all of the code contained in the #define debug blocks
          and execute it on the fly.
         Just run 'python debug2production.py debug'.
-    
+
     2. production
         Output the source to output.py with all of the meta-tags
          stripped.
         Just run it type 'python debug2production.py production'
-        
+
     3. postprocessed
         Output the source to output.py but perserve all the
          metadata.

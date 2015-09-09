@@ -1,7 +1,7 @@
-Install
-=========
-Simple
--------------
+#Install
+
+##Simple
+
 1. download and unpack the contents.
 2. copy pypreprocessor.py to the directory where it will be used
 
@@ -10,27 +10,29 @@ Simple
  other libraries/applications. As long as pypreprocessor exists this
  will remain true.*
 
-Using pip
--------------
+
+##Using pip
+
 1. in a terminal enter:
     sudo pip install pypreprocessor
 
 *Note: sudo is only necessary if the location of the python
- libraries requires root priveledges to access.* 
+ libraries requires root priveledges to access.*
 
 This is the easiest method to install pypreprocessor for system-wide
  use. The only downside is, pip currently only supports installing
  to python 2x.
 
-Using setup.py
--------------
+
+##Using setup.py
+
 1. download and unpack the contents
 2. open a terminal in the directory containing the contents
 3. in the terminal enter:
     sudo python setup.py install
-    
+
 *Note: sudo is only necessary if the location of the python
  libraries requires root priveledges to access.*
- 
+
 To install for python 3x repeat steps 1 & 2 and for step 3 enter:
     sudo python3 setup.py install

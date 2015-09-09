@@ -11,8 +11,10 @@ setup(
     description = "Run c-style preprocessor directives in python modules",
     author = __author__,
     author_email = "evanplaice@gmail.com",
-    url = "http://code.google.com/p/pypreprocessor/",
-    license = open('LICENSE.txt').read(),
+    url = "https://github.com/evanplaice/pypreprocessor",
+    packages=['pypreprocessor'],
+    long_description = open('README.md').read(),
+    license = open('LICENSE').read(),
     keywords = ["python", "preprocessor", "meta"],
     platforms = "all",
     classifiers = [
@@ -30,6 +32,5 @@ setup(
         "Topic :: Software Development :: Pre-processors",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Software Development :: Code Generators",
-        ],
-    long_description = open('README.txt').read()
+    ]
 )
