@@ -53,38 +53,38 @@ The syntax for pypreprocessor uses a select subset of the stanard c-style prepro
 **Supported directives**
 
 * define non-value constants used by the preprocessor
-```
+```python
 #define constant
 ```
 
 
 * remove a non-value constant from the list of defined constants
-```
+```python
 #undef constant
 ```
 
 * makes the subsequent block of code available if the specified constant is set
-```
+```python
 #ifdef constant
 ```
 
 * makes the subsequent block of code available if all of the preceding #ifdef statements return false
-```
+```python
 #else
 ```
 
 * required to close out an #ifdef/#else block
-```
+```python
 #endif
 ```
 
 * exclude a the subsequent block of code (conditionals not included). I know it doesn't fit into the standard set of c-style directives but it's too handy to exclude (no pun).
-```
+```python
 #exclude
 ```
 
 * required to close out an #exclude block
-```
+```python
 #endexclude
 ```
 
@@ -93,22 +93,22 @@ The syntax for pypreprocessor uses a select subset of the stanard c-style prepro
 The following options need to be set prior to pypreprocessor.parse()
 
 
-```
+```python
 pypreprocessor.defines.append('define')
 ```
 add defines to the preprocessor programmatically, this allows the source file to have some decision logic to decide which 'defines' need to be set
 
-```
+```python
 pypreprocessor.input = 'inputFile.py'
 ```
 required if you are preprocessing a module that is going to be imported. you can also use it to process external files.
 
-```
+```python
 pypreprocessor.output = 'outputFile.py'
 ```
 set this to write the post-processed output to a file, no on-the-fly execution needed
 
-```
+```python
 pypreprocessor.removeMeta = True
 ```
 set this to remove the metadata from the output, useful if you're generating a 'clean' version of the source
