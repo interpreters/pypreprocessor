@@ -34,3 +34,6 @@ setup(
         "Topic :: Software Development :: Code Generators",
     ]
 )
+
+# To update run
+# python setup.py sdist upload -r pypi
