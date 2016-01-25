@@ -10,13 +10,14 @@ import traceback
 import imp
 
 class preprocessor:
-    def __init__(self):
+    def __init__(self, inFile=sys.argv[0], outFile='',
+                 defines=[], removeMeta=False, escapeChar = '#'):
         # public variables
-        self.defines = []
-        self.input = sys.argv[0]
-        self.output = ''
-        self.removeMeta = False
-        self.escapeChar = '#'
+        self.defines = defines
+        self.input = inFile
+        self.output = outFile
+        self.removeMeta = removeMeta
+        self.escapeChar = escapeChar
         # private variables
         self.__linenum = 0
         self.__excludeblock = False
