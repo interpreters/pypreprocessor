@@ -1,6 +1,6 @@
-#pypreprocessor
+# pypreprocessor
 
-##Features
+## Features
 
 **support c-style directives in python**
 
@@ -27,7 +27,7 @@
 * useful if you need to run a file in different modes
 * eliminates the need for decision logic in the preprocessor itself
 
-##Benefits
+## Benefits
 
 **Ease of Use**
 
@@ -46,7 +46,7 @@
 * the source footprint for the pypreprocessor code is very small
 * the preprocessor is designed to be as simple and lightweight as possible
 
-##Syntax
+## Syntax
 
 The syntax for pypreprocessor uses a select subset of the stanard c-style preprocessor directives, and then some...
 
@@ -113,7 +113,7 @@ pypreprocessor.removeMeta = True
 ```
 set this to remove the metadata from the output, useful if you're generating a 'clean' version of the source
 
-##Applications
+## Applications
 
 **Include support for debug-specific information**
 
