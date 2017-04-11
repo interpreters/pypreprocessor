@@ -3,6 +3,7 @@
 
 __author__ = 'Evan Plaice'
 __version__ = '0.6.0'
+#modified by hendiol
 
 import sys
 import os
