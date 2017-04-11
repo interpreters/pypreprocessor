@@ -37,7 +37,7 @@ class preprocessor:
         self.__ifcondition = ''
         self.__ifconditions = []
         self.__evalsquelch = True
-        self.__outputBuffer = 
+        self.__outputBuffer = ''
 
     # the #define directive
     def define(self, define):
