@@ -3,8 +3,10 @@
 
 __author__ = 'Evan Plaice'
 __version__ = '0.6.0'
-# changed by hendiol 18.01.2017
-# added reset_internal for processing several files after each other
+
+
+
+# changed by hendiol at 18.01.2017: added reset_internal for processing several files after each other
 
 import sys
 import os
