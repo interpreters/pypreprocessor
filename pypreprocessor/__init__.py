@@ -5,6 +5,10 @@ __author__ = 'Evan Plaice'
 __version__ = '0.6.0'
 #modified by hendiol
 
+
+
+# changed by hendiol at 18.01.2017: added reset_internal for processing several files after each other
+
 import sys
 import os
 import traceback
@@ -20,6 +24,16 @@ class preprocessor:
         self.removeMeta = removeMeta
         self.escapeChar = escapeChar
         # private variables
+        self.__linenum = 0
+        self.__excludeblock = False
+        self.__ifblock = False
+        self.__ifcondition = ''
+        self.__ifconditions = []
+        self.__evalsquelch = True
+        self.__outputBuffer = ''
+    
+    # reseting internal things to parse a second file
+    def reset_internal(self):
         self.__linenum = 0
         self.__excludeblock = False
         self.__ifblock = False
@@ -189,9 +203,12 @@ class preprocessor:
         finally:
             output_file.close()
         # resolve postprocess stage depending on the mode
+        '''
         if self.run == False:
             sys.exit(0)
         else:
+        #'''
+        if self.run == True:
             # if this module is loaded as a library override the import
             if imp.lock_held() is True:
                     self.override_import()
