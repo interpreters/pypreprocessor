@@ -116,6 +116,15 @@ class preprocessor:
                     self.__ifcondition = ''
                     self.__ifconditions = []
                 return False, True
+                
+        # handle #else directives
+        if line[:5] == self.escapeChar + 'else':
+            if len(line.split()) != 1:
+                self.exit_error(self.escapeChar + 'else')
+            else:
+                self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
+            return False, True                
+                
         # handle #endexclude directives
         if line[:11] == self.escapeChar + 'endexclude':
             if len(line.split()) != 1:
@@ -149,20 +158,12 @@ class preprocessor:
         if self.__ifblocks: # is True:   
             # evaluate and process an #ifdef
             if line[:6] == self.escapeChar + 'ifdef':
-                if self.search_defines(self.__ifcondition):
-                    self.__evalsquelch = False
-                else:
-                    self.__evalsquelch = True
                 return False, True
             # evaluate and process the #else
             elif line[:5] == self.escapeChar + 'else':
-                if self.compare_defines_and_conditions(self.defines, self.__ifconditions):
-                    self.__evalsquelch = False
-                else:
-                    self.__evalsquelch = True
                 return False, True    
             else:
-                return self.__evalsquelch or self.__if(), False
+                return self.__if(), False #self.__evalsquelch
         else:
             return False, False   
 
@@ -192,7 +193,24 @@ class preprocessor:
             for line in input_file:
                 self.__linenum += 1
                 # to squelch or not to squelch
+                print('__________________')
+                print('lexer',self.__linenum)
+                print('Def',self.defines)
+                print('Cond',self.__ifconditions)
+                print('Ifs',self.__ifblocks)
+                print('Eval',self.__evalsquelch)
+                print(self.__if())
+                #
                 squelch, metaData = self.lexer(line)
+                # 
+                print('----')
+                print('Def',self.defines)
+                print('Cond',self.__ifconditions)
+                print('Ifs',self.__ifblocks)
+                print('Eval',self.__evalsquelch)
+                print(self.__if())
+                print(squelch, metaData)
+                print(line)
                 #
                 # process and output
                 if self.removeMeta is True:
