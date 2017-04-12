@@ -6,8 +6,8 @@ __version__ = '0.6.0'
 #modified by hendiol
 
 
-
 # changed by hendiol at 18.01.2017: added reset_internal for processing several files after each other
+# changed by hendiol at 11.04.2017: trying to get nested #ifdefs handeld
 
 import sys
 import os
@@ -68,7 +68,7 @@ class preprocessor:
     # evaluate
     def lexer(self, line):
     # return values are (squelch, metadata)
-        if self.__ifblock is False and self.__excludeblock is False:
+        if self.__ifblock is False and self.__excludeblock is False: #this has to be modified for nested blocks i think???
             # squelch the preprocessor parse on the first
             # pass to prevent preprocessor infinite loop
             if 'pypreprocessor.parse()' in line:
