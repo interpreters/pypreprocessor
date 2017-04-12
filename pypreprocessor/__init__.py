@@ -162,7 +162,7 @@ class preprocessor:
             index += 1
 
     # parsing/processing
-    def parse(self):
+    def parse(self,next_file=False):
         # open the input file
         input_file = open(os.path.join(self.input),'r')
         try:
@@ -183,10 +183,10 @@ class preprocessor:
                     continue
         finally:
             input_file.close()
-        self.post_process()
+        self.post_process(next_file)
 
     # post-processor
-    def post_process(self):
+    def post_process(self,next_file=False):
         try:
             # open file for output (no auto-run)
             if self.output != '':
@@ -202,20 +202,20 @@ class preprocessor:
         finally:
             output_file.close()
         # resolve postprocess stage depending on the mode
-        '''
-        if self.run == False:
-            sys.exit(0)
+        if next_file:
+            self.reset_internal()
         else:
-        #'''
-        if self.run == True:
-            # if this module is loaded as a library override the import
-            if imp.lock_held() is True:
-                    self.override_import()
-            else:
-                self.on_the_fly()
-                # break execution so python doesn't
-                # run the rest of the pre-processed code
+            if self.run == False:
                 sys.exit(0)
+            else:
+                # if this module is loaded as a library override the import
+                if imp.lock_held() is True:
+                        self.override_import()
+                else:
+                    self.on_the_fly()
+                    # break execution so python doesn't
+                    # run the rest of the pre-processed code
+                    sys.exit(0)
 
     # postprocessor - override an import
     def override_import(self):
