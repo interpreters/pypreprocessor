@@ -91,12 +91,25 @@ class preprocessor:
                 self.define(line.split()[1])
                 return False, True
         # handle #undef directives
-        if line[:6] == self.escapeChar + 'undef':
+        elif line[:6] == self.escapeChar + 'undef':
             if len(line.split()) != 2:
                 self.exit_error(self.escapeChar + 'undef')
             else:
                 self.undefine(line.split()[1])
                 return False, True
+        # handle #exclude directives
+        elif line[:8] == self.escapeChar + 'exclude':
+            if len(line.split()) != 1:
+                self.exit_error(self.escapeChar + 'exclude')
+            else:
+                self.__excludeblock = True
+        # handle #endexclude directives
+        elif line[:11] == self.escapeChar + 'endexclude':
+            if len(line.split()) != 1:
+                self.exit_error(self.escapeChar + 'endexclude')
+            else:
+                self.__excludeblock = False
+                return False, True  
         # handle #endif directives
         if line[:6] == self.escapeChar + 'endif':
             if len(line.split()) != 1:
@@ -109,6 +122,8 @@ class preprocessor:
                     self.__ifblocks = []
                     self.__ifconditions = []
                 return False, True
+              
+                
                 
         # handle #else directives
         if line[:5] == self.escapeChar + 'else':
@@ -118,19 +133,8 @@ class preprocessor:
                 self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
             return False, True                
                 
-        # handle #endexclude directives
-        if line[:11] == self.escapeChar + 'endexclude':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endexclude')
-            else:
-                self.__excludeblock = False
-                return False, True
-        # handle #exclude directives
-        if line[:8] == self.escapeChar + 'exclude':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'exclude')
-            else:
-                self.__excludeblock = True
+
+
         # process the excludeblock
         if self.__excludeblock is True:
             return True, False
