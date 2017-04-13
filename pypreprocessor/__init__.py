@@ -110,8 +110,23 @@ class preprocessor:
             else:
                 self.__excludeblock = False
                 return False, True  
+        # handle #ifdef directives
+        elif line[:6] == self.escapeChar + 'ifdef':
+            if len(line.split()) != 2:
+                self.exit_error(self.escapeChar + 'ifdef')
+            else:
+                self.__ifblocks.append(self.search_defines(line.split()[1]))
+                self.__ifconditions.append(line.split()[1])  
+                return False, True
+        # handle #else directives
+        elif line[:5] == self.escapeChar + 'else':
+            if len(line.split()) != 1:
+                self.exit_error(self.escapeChar + 'else')
+            else:
+                self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
+            return False, True                  
         # handle #endif directives
-        if line[:6] == self.escapeChar + 'endif':
+        elif line[:6] == self.escapeChar + 'endif':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'endif')
             else:
@@ -122,45 +137,16 @@ class preprocessor:
                     self.__ifblocks = []
                     self.__ifconditions = []
                 return False, True
-              
-                
-                
-        # handle #else directives
-        if line[:5] == self.escapeChar + 'else':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'else')
+        else: #No directive --> execute
+            # process the excludeblock
+            if self.__excludeblock is True:
+                return True, False
+            # process the ifblock
+            elif self.__ifblocks: # is True:   
+                return self.__if(), False
+            #here can add other stuff for deleting comnments eg
             else:
-                self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
-            return False, True                
-                
-
-
-        # process the excludeblock
-        if self.__excludeblock is True:
-            return True, False
-        # handle #ifdef directives
-        if line[:6] == self.escapeChar + 'ifdef':
-            if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'ifdef')
-            else:
-                self.__ifblocks.append(self.search_defines(line.split()[1]))
-                self.__ifconditions.append(line.split()[1])
-        # handle #else directives
-        if line[:5] == self.escapeChar + 'else':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'else')
-        # process the ifblock
-        if self.__ifblocks: # is True:   
-            # evaluate and process an #ifdef
-            if line[:6] == self.escapeChar + 'ifdef':
-                return False, True
-            # evaluate and process the #else
-            elif line[:5] == self.escapeChar + 'else':
-                return False, True    
-            else:
-                return self.__if(), False #self.__evalsquelch
-        else:
-            return False, False   
+                return False, False   
 
 
 
