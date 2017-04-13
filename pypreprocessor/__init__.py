@@ -2,14 +2,8 @@
 # pypreprocessor.py
 
 __author__ = 'Evan Plaice'
-__version__ = '0.6.0'
-#modified by hendiol
-
-
-# changed by hendiol at 18.01.2017: added reset_internal for processing several files after each other
-# changed by hendiol at 11.04.2017: trying to get nested #ifdefs handeld
-
-#develop nested further
+__version__ = '0.6.1'
+__coaothor__ = 'Hendi O L'
 
 import sys
 import os
@@ -51,37 +45,28 @@ class preprocessor:
         # re-map the defines list excluding the define specified in the args
         self.defines[:] = [x for x in self.defines if x != define]
 
+    # search: if define is defined
     def search_defines(self, define):
         if define in self.defines:
             return True
         else:
             return False
-
-    # the #ifdef directive
-    def compare_defines_and_conditions(self, defines, conditions):
-        # if defines and conditions lists have no intersecting values (ie. else = true)
-        if not [val for val in defines if val in conditions]:
-            return True
-        else:
-            return False
             
+    #returning: validness of #ifdef #else block        
     def __if(self):
         value = bool(self.__ifblocks)
-        for ib in self.__ifblocks: #may better use list comprehension
-            value=value and ib
+        for ib in self.__ifblocks:
+           value*=ib   #* represents and: value = value and ib
         return not value    #not: because True means removing
 
-
-
- # evaluate
+    # evaluate
     def lexer(self, line):
     # return values are (squelch, metadata)
-        if not self.__ifblocks and self.__excludeblock is False: 
-            # squelch the preprocessor parse on the first
-            # pass to prevent preprocessor infinite loop
+        if not (self.__ifblocks or self.__excludeblock):
             if 'pypreprocessor.parse()' in line:
                 return True, True
-            if line[:1] != self.escapeChar:
+            #this block only for faster processing (not necessary)
+            elif line[:1] != self.escapeChar:
                 return False, False
         # handle #define directives
         if line[:7] == self.escapeChar + 'define':
@@ -103,6 +88,7 @@ class preprocessor:
                 self.exit_error(self.escapeChar + 'exclude')
             else:
                 self.__excludeblock = True
+                return False, True
         # handle #endexclude directives
         elif line[:11] == self.escapeChar + 'endexclude':
             if len(line.split()) != 1:
@@ -174,25 +160,7 @@ class preprocessor:
             for line in input_file:
                 self.__linenum += 1
                 # to squelch or not to squelch
-                print('__________________')
-                print('lexer',self.__linenum)
-                print('Def',self.defines)
-                print('Cond',self.__ifconditions)
-                print('Ifs',self.__ifblocks)
-                print('Eval',self.__evalsquelch)
-                print(self.__if())
-                #
                 squelch, metaData = self.lexer(line)
-                # 
-                print('----')
-                print('Def',self.defines)
-                print('Cond',self.__ifconditions)
-                print('Ifs',self.__ifblocks)
-                print('Eval',self.__evalsquelch)
-                print(self.__if())
-                print(squelch, metaData)
-                print(line)
-                #
                 # process and output
                 if self.removeMeta is True:
                     if metaData is True or squelch is True:
