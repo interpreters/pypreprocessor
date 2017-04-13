@@ -2,18 +2,8 @@
 # pypreprocessor.py
 
 __author__ = 'Evan Plaice'
-<<<<<<< HEAD
-__version__ = '0.6.0'
-#modified by hendiol
-
-# changed by hendiol at 18.01.2017: added reset_internal for processing several files after each other
-# changed by hendiol at 11.04.2017: trying to get nested #ifdefs handeld
-# changed by hendiol at 12.04.2017: improved (several file processing) and added nested ifdef statements possible
-
-=======
 __version__ = '0.6.1'
 __coaothor__ = 'Hendi O L'
->>>>>>> 3a52c1fbea57d56400b8daaba9b89a44675f87db
 
 import sys
 import os
