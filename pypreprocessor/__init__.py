@@ -2,6 +2,7 @@
 # pypreprocessor.py
 
 __author__ = 'Evan Plaice'
+<<<<<<< HEAD
 __version__ = '0.6.0'
 #modified by hendiol
 
@@ -9,6 +10,10 @@ __version__ = '0.6.0'
 # changed by hendiol at 11.04.2017: trying to get nested #ifdefs handeld
 # changed by hendiol at 12.04.2017: improved (several file processing) and added nested ifdef statements possible
 
+=======
+__version__ = '0.6.1'
+__coaothor__ = 'Hendi O L'
+>>>>>>> 3a52c1fbea57d56400b8daaba9b89a44675f87db
 
 import sys
 import os
@@ -27,9 +32,7 @@ class preprocessor:
         # private variables
         self.__linenum = 0
         self.__excludeblock = False
-        self.__ifblock = False
         self.__ifblocks = []
-        self.__ifcondition = ''
         self.__ifconditions = []
         self.__evalsquelch = True
         self.__outputBuffer = ''
@@ -38,9 +41,7 @@ class preprocessor:
     def reset_internal(self):
         self.__linenum = 0
         self.__excludeblock = False
-        self.__ifblock = False
         self.__ifblocks = []
-        self.__ifcondition = ''
         self.__ifconditions = []
         self.__evalsquelch = True
         self.__outputBuffer = ''
@@ -54,37 +55,28 @@ class preprocessor:
         # re-map the defines list excluding the define specified in the args
         self.defines[:] = [x for x in self.defines if x != define]
 
+    # search: if define is defined
     def search_defines(self, define):
         if define in self.defines:
             return True
         else:
             return False
-
-    # the #ifdef directive
-    def compare_defines_and_conditions(self, defines, conditions):
-        # if defines and conditions lists have no intersecting values (ie. else = true)
-        if not [val for val in defines if val in conditions]:
-            return True
-        else:
-            return False
             
+    #returning: validness of #ifdef #else block        
     def __if(self):
         value = bool(self.__ifblocks)
-        for ib in self.__ifblocks: #may better use list comprehension
-            value=value and ib
+        for ib in self.__ifblocks:
+           value*=ib   #* represents and: value = value and ib
         return not value    #not: because True means removing
 
-
-
- # evaluate
+    # evaluate
     def lexer(self, line):
     # return values are (squelch, metadata)
-        if not self.__ifblocks and self.__excludeblock is False: 
-            # squelch the preprocessor parse on the first
-            # pass to prevent preprocessor infinite loop
+        if not (self.__ifblocks or self.__excludeblock):
             if 'pypreprocessor.parse()' in line:
                 return True, True
-            if line[:1] != self.escapeChar:
+            #this block only for faster processing (not necessary)
+            elif line[:1] != self.escapeChar:
                 return False, False
         # handle #define directives
         if line[:7] == self.escapeChar + 'define':
@@ -94,76 +86,63 @@ class preprocessor:
                 self.define(line.split()[1])
                 return False, True
         # handle #undef directives
-        if line[:6] == self.escapeChar + 'undef':
+        elif line[:6] == self.escapeChar + 'undef':
             if len(line.split()) != 2:
                 self.exit_error(self.escapeChar + 'undef')
             else:
                 self.undefine(line.split()[1])
                 return False, True
-        # handle #endif directives
-        if line[:6] == self.escapeChar + 'endif':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endif')
-            else:
-                if len(self.__ifconditions)>1:
-                    #self.__ifblock = True # is still true
-                    self.__ifblocks.pop(-1)
-                    self.__ifcondition=self.__ifconditions.pop(-1)
-                else:
-                    #self.__ifblock = False
-                    self.__ifblocks = []
-                    self.__ifcondition = ''
-                    self.__ifconditions = []
-                return False, True
-        # handle #endexclude directives
-        if line[:11] == self.escapeChar + 'endexclude':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endexclude')
-            else:
-                self.__excludeblock = False
-                return False, True
         # handle #exclude directives
-        if line[:8] == self.escapeChar + 'exclude':
+        elif line[:8] == self.escapeChar + 'exclude':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'exclude')
             else:
                 self.__excludeblock = True
-        # process the excludeblock
-        if self.__excludeblock is True:
-            return True, False
+                return False, True
+        # handle #endexclude directives
+        elif line[:11] == self.escapeChar + 'endexclude':
+            if len(line.split()) != 1:
+                self.exit_error(self.escapeChar + 'endexclude')
+            else:
+                self.__excludeblock = False
+                return False, True  
         # handle #ifdef directives
-        if line[:6] == self.escapeChar + 'ifdef':
+        elif line[:6] == self.escapeChar + 'ifdef':
             if len(line.split()) != 2:
                 self.exit_error(self.escapeChar + 'ifdef')
             else:
-                #self.__ifblock = True
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
-                self.__ifcondition = line.split()[1]
-                self.__ifconditions.append(line.split()[1])
+                self.__ifconditions.append(line.split()[1])  
+                return False, True
         # handle #else directives
-        if line[:5] == self.escapeChar + 'else':
+        elif line[:5] == self.escapeChar + 'else':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'else')
-        # process the ifblock
-        if self.__ifblocks: # is True:   
-            # evaluate and process an #ifdef
-            if line[:6] == self.escapeChar + 'ifdef':
-                if self.search_defines(self.__ifcondition):
-                    self.__evalsquelch = False
-                else:
-                    self.__evalsquelch = True
-                return False, True
-            # evaluate and process the #else
-            elif line[:5] == self.escapeChar + 'else':
-                if self.compare_defines_and_conditions(self.defines, self.__ifconditions):
-                    self.__evalsquelch = False
-                else:
-                    self.__evalsquelch = True
-                return False, True    
             else:
-                return self.__evalsquelch or self.__if(), False
-        else:
-            return False, False   
+                self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
+            return False, True                  
+        # handle #endif directives
+        elif line[:6] == self.escapeChar + 'endif':
+            if len(line.split()) != 1:
+                self.exit_error(self.escapeChar + 'endif')
+            else:
+                if len(self.__ifconditions)>1:
+                    self.__ifblocks.pop(-1)
+                    self.__ifcondition=self.__ifconditions.pop(-1)
+                else:
+                    self.__ifblocks = []
+                    self.__ifconditions = []
+                return False, True
+        else: #No directive --> execute
+            # process the excludeblock
+            if self.__excludeblock is True:
+                return True, False
+            # process the ifblock
+            elif self.__ifblocks: # is True:   
+                return self.__if(), False
+            #here can add other stuff for deleting comnments eg
+            else:
+                return False, False   
 
 
 
@@ -192,7 +171,6 @@ class preprocessor:
                 self.__linenum += 1
                 # to squelch or not to squelch
                 squelch, metaData = self.lexer(line)
-                #
                 # process and output
                 if self.removeMeta is True:
                     if metaData is True or squelch is True:
@@ -263,89 +241,6 @@ class preprocessor:
         finally:
             # remove tmp file
             os.remove(self.output)    
-            
-            
- # evaluate
-    def lexer_orig(self, line):
-    # return values are (squelch, metadata)
-        if self.__ifblock is False and self.__excludeblock is False: #this has to be modified for nested blocks i think???
-            # squelch the preprocessor parse on the first
-            # pass to prevent preprocessor infinite loop
-            if 'pypreprocessor.parse()' in line:
-                return True, True
-            if line[:1] != self.escapeChar:
-                return False, False
-        # handle #define directives
-        if line[:7] == self.escapeChar + 'define':
-            if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'define')
-            else:
-                self.define(line.split()[1])
-                return False, True
-        # handle #undef directives
-        if line[:6] == self.escapeChar + 'undef':
-            if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'undef')
-            else:
-                self.undefine(line.split()[1])
-                return False, True
-        # handle #endif directives
-        if line[:6] == self.escapeChar + 'endif':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endif')
-            else:
-                self.__ifblock = False    #dependend on list of ifconditions
-                self.__ifcondition = ''
-                self.__ifconditions = []
-                return False, True
-        # handle #endexclude directives
-        if line[:11] == self.escapeChar + 'endexclude':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endexclude')
-            else:
-                self.__excludeblock = False
-                return False, True
-        # handle #exclude directives
-        if line[:8] == self.escapeChar + 'exclude':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'exclude')
-            else:
-                self.__excludeblock = True
-        # process the excludeblock
-        if self.__excludeblock is True:
-            return True, False
-        # handle #ifdef directives
-        if line[:6] == self.escapeChar + 'ifdef':
-            if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'ifdef')
-            else:
-                self.__ifblock = True
-                self.__ifcondition = line.split()[1]
-                self.__ifconditions.append(line.split()[1])
-        # handle #else directives
-        if line[:5] == self.escapeChar + 'else':
-            if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'else')
-        # process the ifblock
-        if self.__ifblock is True:    #this can remain, True if one ifblock is true, more possible
-            # evaluate and process an #ifdef
-            if line[:6] == self.escapeChar + 'ifdef':
-                if self.search_defines(self.__ifcondition):
-                    self.__evalsquelch = False
-                else:
-                    self.__evalsquelch = True
-                return False, True
-            # evaluate and process the #else
-            elif line[:5] == self.escapeChar + 'else':
-                if self.compare_defines_and_conditions(self.defines, self.__ifconditions):
-                    self.__evalsquelch = False
-                else:
-                    self.__evalsquelch = True
-                return False, True
-            else:
-                return self.__evalsquelch, False
-        else:
-            return False, False   
 
 
 pypreprocessor = preprocessor()
