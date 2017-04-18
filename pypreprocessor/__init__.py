@@ -186,7 +186,7 @@ class preprocessor:
             #preprocess and continue
             elif self.mode == 'PPCONT' or self.mode == 'ppcont' or self.mode == 'PPCont':
                 if self.output == '':
-                    self.output = self.input+'_out'
+                    self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
                 # open file for output (no auto-run)
                 output_file = open(self.output, 'w')
             # preprocess file and exit (choosen by PP, default, fallback)
@@ -197,7 +197,7 @@ class preprocessor:
                     print('Using mode: PP (preprocessing and closing)')
                     self.mode='PP'
                 if self.output == '':
-                    self.output = self.input[0:-len(self.input.split('.')[-1])]+'_out.'+self.input.split('.')[-1]
+                    self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
                 # open file for output (no run)
                 output_file = open(self.output, 'w')
             #
@@ -250,7 +250,6 @@ class preprocessor:
             self.rewrite_traceback()
         finally:
             # remove tmp file
-            os.remove(self.output)    
-
+            os.remove(self.output)
 
 pypreprocessor = preprocessor()
