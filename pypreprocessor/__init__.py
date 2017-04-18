@@ -12,13 +12,14 @@ import imp
 
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='',
-                 defines=[], removeMeta=False, escapeChar = '#'):
+                 defines=[], removeMeta=False, escapeChar = '#', mode='PP'):
         # public variables
         self.defines = defines
         self.input = inFile
         self.output = outFile
         self.removeMeta = removeMeta
         self.escapeChar = escapeChar
+        self.mode=mode
         # private variables
         self.__linenum = 0
         self.__excludeblock = False
@@ -28,7 +29,7 @@ class preprocessor:
         self.__outputBuffer = ''
     
     # reseting internal things to parse a second file
-    def reset_internal(self):
+    def __reset_internal(self):
         self.__linenum = 0
         self.__excludeblock = False
         self.__ifblocks = []
@@ -152,7 +153,7 @@ class preprocessor:
             index += 1
 
     # parsing/processing
-    def parse(self,next_file=False):
+    def parse(self):
         # open the input file
         input_file = open(os.path.join(self.input),'r')
         try:
@@ -173,39 +174,58 @@ class preprocessor:
                     continue
         finally:
             input_file.close()
-        self.post_process(next_file)
+        self.post_process()
 
     # post-processor
-    def post_process(self,next_file=False):
+    def post_process(self):
         try:
-            # open file for output (no auto-run)
-            if self.output != '':
-                self.run = False
+            # preprocess file and run ist 
+            if self.mode == 'RUN' or self.mode == 'run' or self.mode == 'Run':
+                # open tmp file
+                self.output ='tmp_' + os.path.basename(self.input)
+            #preprocess and continue
+            elif self.mode == 'PPCONT' or self.mode == 'ppcont' or self.mode == 'PPCont':
+                if self.output == '':
+                    self.output = self.input+'_out'
+                # open file for output (no auto-run)
                 output_file = open(self.output, 'w')
-            # open tmp file
+            # preprocess file and exit (choosen by PP, default, fallback)
             else:
-                self.run = True
-                self.output = 'tmp_' + os.path.basename(self.input)
+                # 
+                if self.mode !='PP' or self.mode !='pp' or self.mode != 'Pp':
+                    print('Warning: undefined mode !! '+str(self.mode))
+                    print('Using mode: PP (preprocessing and closing)')
+                    self.mode='PP'
+                if self.output == '':
+                    self.output = self.input[0:-len(self.input.split('.')[-1])]+'_out.'+self.input.split('.')[-1]
+                # open file for output (no run)
                 output_file = open(self.output, 'w')
+            #
             # write post-processed code to file
             output_file.write(self.__outputBuffer)
         finally:
             output_file.close()
         # resolve postprocess stage depending on the mode
-        if next_file:
-            self.reset_internal()
-        else:
-            if self.run == False:
-                sys.exit(0)
+        # preprocess file and run ist 
+        if self.mode == 'RUN' or self.mode == 'run' or self.mode == 'Run':
+            # if this module is loaded as a library override the import
+            if imp.lock_held() is True:
+                    self.override_import()
             else:
-                # if this module is loaded as a library override the import
-                if imp.lock_held() is True:
-                        self.override_import()
-                else:
-                    self.on_the_fly()
-                    # break execution so python doesn't
-                    # run the rest of the pre-processed code
-                    sys.exit(0)
+                self.on_the_fly()
+                # break execution so python doesn't
+                # run the rest of the pre-processed code
+                sys.exit(0)
+        # preprocess file and exit
+        elif self.mode =='PP' or self.mode=='pp' or self.mode == 'Pp':
+            sys.exit(0)
+        #preprocess and continue
+        elif self.mode == 'PPCONT' or self.mode == 'ppcont' or self.mode == 'PPCont':
+            self.__reset_internal()
+        #undefined mode
+        else:
+            self.exit_error('wrong mode in end of post-process')
+
 
     # postprocessor - override an import
     def override_import(self):
