@@ -191,7 +191,7 @@ class preprocessor:
             # preprocess file and exit (choosen by PP, default, fallback)
             else:
                 # 
-                if self.mode !='PP' or self.mode !='pp' or self.mode != 'Pp':
+                if self.mode !='PP' and self.mode !='pp' and self.mode != 'Pp':
                     print('Warning: undefined mode !! '+str(self.mode))
                     print('Using mode: PP (preprocessing and closing)')
                     self.mode='PP'
