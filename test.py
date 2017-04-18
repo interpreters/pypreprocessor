@@ -35,6 +35,7 @@ iftest = []
 iftest += [0]
 #ifdef testnotif
 iftest += [1]
+#endif
 #ifdef testif2
 iftest += [0]
 #else
@@ -49,8 +50,10 @@ else:
 elsetest = []
 #ifdef foo
 elsetest += [1]
+#endif
 #ifdef bar
 elsetest += [1]
+#endif
 #ifdef baz
 elsetest += [1]
 #else

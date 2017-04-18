@@ -15,7 +15,7 @@ import imp
 
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='',
-                 defines=[], removeMeta=False, escapeChar = '#', mode='PP'):
+                 defines=[], removeMeta=False, escapeChar = '#', mode='Run'):
         # public variables
         self.defines = defines
         self.input = inFile
