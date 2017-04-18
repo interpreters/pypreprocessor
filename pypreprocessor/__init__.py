@@ -2,8 +2,9 @@
 # pypreprocessor.py
 
 __author__ = 'Evan Plaice'
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 __coaothor__ = 'Hendi O L'
+
 
 import sys
 import os
