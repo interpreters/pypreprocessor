@@ -108,14 +108,25 @@ class preprocessor:
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
                 self.__ifconditions.append(line.split()[1])  
                 return False, True
+        # handle #else...
+        # handle #elseif directives
+        elif line[:7] == self.escapeChar + 'elseif':
+            if len(line.split()) != 2:
+                self.exit_error(self.escapeChar + 'elseif')
+            else:
+                self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
+                self.__ifblocks.append(self.search_defines(line.split()[1]))
+                self.__ifconditions.append(line.split()[1]) 
+            return False, True          
         # handle #else directives
         elif line[:5] == self.escapeChar + 'else':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'else')
             else:
                 self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
-            return False, True                  
-        # handle #endif directives
+            return False, True    
+        # handle #endif..              
+        # handle #endifall directives
         elif line[:9] == self.escapeChar + 'endifall':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'endifall')
@@ -123,7 +134,7 @@ class preprocessor:
                 self.__ifblocks = []
                 self.__ifconditions = []
                 return False, True
-        #    
+        # handle #endif directives    
         elif line[:6] == self.escapeChar + 'endif':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'endif')
