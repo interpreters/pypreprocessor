@@ -27,6 +27,12 @@
 * useful if you need to run a file in different modes
 * eliminates the need for decision logic in the preprocessor itself
 
+**nested #ifdef directives are supported
+
+* helpfull for more complicated code
+* #endifall gives the opportunity to end all open blocks
+
+
 ## Benefits
 
 **Ease of Use**
@@ -77,8 +83,12 @@ The syntax for pypreprocessor uses a select subset of the stanard c-style prepro
 ```python
 #endif
 ```
+* possibility to close all open blocks
+```python
+#endifall
+```
 
-* exclude a the subsequent block of code (conditionals not included). I know it doesn't fit into the standard set of c-style directives but it's too handy to exclude (no pun).
+* exclude the subsequent block of code (conditionals not included). I know it doesn't fit into the standard set of c-style directives but it's too handy to exclude (no pun).
 ```python
 #exclude
 ```
@@ -99,6 +109,14 @@ pypreprocessor.defines.append('define')
 add defines to the preprocessor programmatically, this allows the source file to have some decision logic to decide which 'defines' need to be set
 
 ```python
+pypreprocessor.mode = 'Run' / 'PP' / 'PPCont'
+```
+set the mode of the preprocessor:
+* Run: PreProcess the code and Run it
+* PP: PreProcess the code and save the file, afterwards close
+* PPCont: PreProcessContinue after a file is preprocessed and saved the preprocessor is reseted and can preprocess a next file
+
+```python
 pypreprocessor.input = 'inputFile.py'
 ```
 required if you are preprocessing a module that is going to be imported. you can also use it to process external files.
@@ -106,7 +124,7 @@ required if you are preprocessing a module that is going to be imported. you can
 ```python
 pypreprocessor.output = 'outputFile.py'
 ```
-set this to write the post-processed output to a file, no on-the-fly execution needed
+set this to get a user defined name for the output file, otherwise the default is used: ``` 'inputFile_out.py' ```
 
 ```python
 pypreprocessor.removeMeta = True

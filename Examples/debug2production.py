@@ -49,10 +49,12 @@ pypreprocessor.parse()
 #endexclude
 #ifdef debug
 print('This script is running in \'debug\' mode')
+#else
 #ifdef production
 print('This script is running in \'production\' mode')
 print('To see the output open ' + outputFile)
+#else
 #ifdef postprocessed
 print('This script is running in \'postprocessed\' mode')
 print('To see the output open ' + outputFile)
-#endif
+#endifall

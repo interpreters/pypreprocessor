@@ -29,8 +29,9 @@ pypreprocessor.parse()
 #endexclude
 #ifdef python2
 print('You are using Python 2x')
+#else
 #ifdef python3
 print('You are using python 3x')
 #else
 print('Python version not supported')
-#endif
+#endifall
