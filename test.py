@@ -67,7 +67,7 @@ elsetest += [1]
 #else
 elsetest += [0]
 #endif
-if 1 in elsetest:
+if 1 in elsetest or len(elsetest) != 1:
     tests += ['#else: failed']
 else:
     tests += ['#else: passed']
@@ -81,17 +81,27 @@ nesttest += [0]
 #ifdef nested2
 nesttest += [0]
 #else
-nesttest += [1]
+nesttest += [3]
 #endif
 nesttest += [0]
 #else
-nesttest += [1]
+nesttest += [4]
 #ifdef nested2
+nesttest += [5]
+#else
+nesttest += [6]
+#endifall
+#ifdef nested3
+nesttest += [7]
+#elseif nested2
 nesttest += [0]
 #else
-nesttest += [1]
-#endifall
-if 1 in elsetest:
+nesttest += [9]
+#endif
+nesttest += [0]
+#endif
+if 1 in nesttest or len(nesttest)!=5:
+    print(nesttest)
     tests += ['#nested: failed']
 else:
     tests += ['#nested: passed']
@@ -111,7 +121,7 @@ for test in tests:
     print(test)
     
 # #still open #ifdefs test
-print('If there was no warning: Warning Test Failed')
+print('If there was no warning with else,else,if: Warning Test Failed')
 #ifdef car
 #else
 #ifdef bus
