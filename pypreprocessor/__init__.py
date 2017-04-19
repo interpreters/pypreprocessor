@@ -5,8 +5,6 @@ __author__ = 'Evan Plaice'
 __version__ = '0.6.2'
 __coaothor__ = 'Hendi O L'
 
-#Further develop
-
 
 import sys
 import os
