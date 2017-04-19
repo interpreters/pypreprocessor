@@ -18,6 +18,13 @@ tests += ['#define: passed']
 tests += ['#define: failed']
 #endif
 
+# #not define test
+#ifdef testdefine2
+tests += ['#not define: failed']
+#else
+tests += ['#not define: passed']
+#endif
+
 # #undef test
 #define testundef
 #undef testundef
@@ -26,6 +33,7 @@ tests += ['#undef: failed']
 #else
 tests += ['#undef: passed']
 #endif
+
 
 # #ifdef test
 iftest = []
@@ -63,6 +71,30 @@ if 1 in elsetest:
     tests += ['#else: failed']
 else:
     tests += ['#else: passed']
+    
+# #nested ifdef test
+#define nested1
+#define nested2
+nesttest = []
+#ifdef nested1
+nesttest += [0]
+#ifdef nested2
+nesttest += [0]
+#else
+nesttest += [1]
+#endif
+nesttest += [0]
+#else
+nesttest += [1]
+#ifdef nested2
+nesttest += [0]
+#else
+nesttest += [1]
+#endifall
+if 1 in elsetest:
+    tests += ['#nested: failed']
+else:
+    tests += ['#nested: passed']
 
 # #exclude test
 excludetest = []
@@ -77,3 +109,11 @@ else:
 # print the results
 for test in tests:
     print(test)
+    
+# #still open #ifdefs test
+print('If there was no warning: Warning Test Failed')
+#ifdef car
+#else
+#ifdef bus
+#else
+#ifdef truck

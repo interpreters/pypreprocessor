@@ -116,6 +116,14 @@ class preprocessor:
                 self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
             return False, True                  
         # handle #endif directives
+        elif line[:9] == self.escapeChar + 'endifall':
+            if len(line.split()) != 1:
+                self.exit_error(self.escapeChar + 'endifall')
+            else:
+                self.__ifblocks = []
+                self.__ifconditions = []
+                return False, True
+        #    
         elif line[:6] == self.escapeChar + 'endif':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'endif')
@@ -177,6 +185,19 @@ class preprocessor:
                     continue
         finally:
             input_file.close()
+            #Warnings for unclosed #ifdef blocks
+            if self.__ifblocks:
+                print('Warning: Number of unclosed Ifdefblocks: ',len(self.__ifblocks))
+                print('Can cause unwished behaviour in the preprocessed code, preprocessor is safe')
+                if input('Do you want more Information? ').lower() in ('yes','true','t','1'):
+                    for i, item in enumerate(self.__ifconditions):
+                        if (item in self.defines) != self.__ifblocks[i]:
+                            cond = ' else '
+                        else:
+                            cond = ' if '
+                        print('Block:',item, ' is in condition: ',cond )                    
+                    
+                
         self.post_process()
 
     # post-processor
