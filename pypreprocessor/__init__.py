@@ -100,6 +100,14 @@ class preprocessor:
             else:
                 self.__excludeblock = False
                 return False, True  
+        # handle #ifnotdef directives (is the same as: #ifdef X #else)
+        elif line[:9] == self.escapeChar + 'ifdefnot':
+            if len(line.split()) != 2:
+                self.exit_error(self.escapeChar + 'ifdefnot')
+            else:
+                self.__ifblocks.append(not(self.search_defines(line.split()[1])))
+                self.__ifconditions.append(line.split()[1])  
+                return False, True
         # handle #ifdef directives
         elif line[:6] == self.escapeChar + 'ifdef':
             if len(line.split()) != 2:
@@ -114,7 +122,7 @@ class preprocessor:
             if len(line.split()) != 2:
                 self.exit_error(self.escapeChar + 'elseif')
             else:
-                self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
+                self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
                 self.__ifconditions.append(line.split()[1]) 
             return False, True          
@@ -123,7 +131,7 @@ class preprocessor:
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'else')
             else:
-                self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
+                self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
             return False, True    
         # handle #endif..              
         # handle #endifall directives

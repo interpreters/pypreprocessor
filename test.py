@@ -18,6 +18,13 @@ tests += ['#define: passed']
 tests += ['#define: failed']
 #endif
 
+#ifdefnot testdefine
+tests += ['#definenot: failed']
+#else
+tests += ['#definenot: passed']
+#endif
+
+
 # #not define test
 #ifdef testdefine2
 tests += ['#not define: failed']
