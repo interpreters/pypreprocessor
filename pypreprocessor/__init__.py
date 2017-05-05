@@ -132,8 +132,22 @@ class preprocessor:
                 self.exit_error(self.escapeChar + 'else')
             else:
                 self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
-            return False, True    
-        # handle #endif..              
+            return False, True 
+        # handle #endif.. 
+        # handle #endififdef
+        elif line[:11] == self.escapeChar + 'endififdef':
+            if len(line.split()) != 2:
+                self.exit_error(self.escapeChar + 'endififdef')
+            else:
+                if len(self.__ifconditions)>=1:
+                    self.__ifblocks.pop(-1)
+                    self.__ifcondition=self.__ifconditions.pop(-1)
+                else: 
+                    self.__ifblocks = []
+                    self.__ifconditions = []
+                self.__ifblocks.append(self.search_defines(line.split()[1]))
+                self.__ifconditions.append(line.split()[1])  
+                return False, True          
         # handle #endifall directives
         elif line[:9] == self.escapeChar + 'endifall':
             if len(line.split()) != 1:
