@@ -5,6 +5,11 @@ __author__ = 'Evan Plaice'
 __version__ = '0.6.2'
 __coaothor__ = 'Hendi O L'
 
+<<<<<<< HEAD
+=======
+#Next function elseif
+
+>>>>>>> develop
 
 import sys
 import os
@@ -98,6 +103,14 @@ class preprocessor:
             else:
                 self.__excludeblock = False
                 return False, True  
+        # handle #ifnotdef directives (is the same as: #ifdef X #else)
+        elif line[:9] == self.escapeChar + 'ifdefnot':
+            if len(line.split()) != 2:
+                self.exit_error(self.escapeChar + 'ifdefnot')
+            else:
+                self.__ifblocks.append(not(self.search_defines(line.split()[1])))
+                self.__ifconditions.append(line.split()[1])  
+                return False, True
         # handle #ifdef directives
         elif line[:6] == self.escapeChar + 'ifdef':
             if len(line.split()) != 2:
@@ -106,14 +119,39 @@ class preprocessor:
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
                 self.__ifconditions.append(line.split()[1])  
                 return False, True
+        # handle #else...
+        # handle #elseif directives
+        elif line[:7] == self.escapeChar + 'elseif':
+            if len(line.split()) != 2:
+                self.exit_error(self.escapeChar + 'elseif')
+            else:
+                self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
+                self.__ifblocks.append(self.search_defines(line.split()[1]))
+                self.__ifconditions.append(line.split()[1]) 
+            return False, True          
         # handle #else directives
         elif line[:5] == self.escapeChar + 'else':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'else')
             else:
-                self.__ifblocks[-1]=not(self.search_defines(self.__ifconditions[-1]))
-            return False, True                  
-        # handle #endif directives
+                self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
+            return False, True 
+        # handle #endif.. 
+        # handle #endififdef
+        elif line[:11] == self.escapeChar + 'endififdef':
+            if len(line.split()) != 2:
+                self.exit_error(self.escapeChar + 'endififdef')
+            else:
+                if len(self.__ifconditions)>=1:
+                    self.__ifblocks.pop(-1)
+                    self.__ifcondition=self.__ifconditions.pop(-1)
+                else: 
+                    self.__ifblocks = []
+                    self.__ifconditions = []
+                self.__ifblocks.append(self.search_defines(line.split()[1]))
+                self.__ifconditions.append(line.split()[1])  
+                return False, True          
+        # handle #endifall directives
         elif line[:9] == self.escapeChar + 'endifall':
             if len(line.split()) != 1:
                 self.exit_error(self.escapeChar + 'endifall')
@@ -121,15 +159,26 @@ class preprocessor:
                 self.__ifblocks = []
                 self.__ifconditions = []
                 return False, True
-        #    
+        # handle #endif and #endif numb directives    
         elif line[:6] == self.escapeChar + 'endif':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endif')
+                self.exit_error(self.escapeChar + 'endif number')
             else:
-                if len(self.__ifconditions)>1:
-                    self.__ifblocks.pop(-1)
-                    self.__ifcondition=self.__ifconditions.pop(-1)
+                try:
+                    number=int(line[6:])
+                except ValueError as VE:
+                    #print('ValueError',VE)
+                    #self.exit_error(self.escapeChar + 'endif number')
+                    number=1
+                if len(self.__ifconditions)>number:
+                    for i in range(0,number):
+                        self.__ifblocks.pop(-1)
+                        self.__ifcondition=self.__ifconditions.pop(-1)
+                elif len(self.__ifconditions) == number:
+                    self.__ifblocks = []
+                    self.__ifconditions = []
                 else:
+                    print('Warning try to remove more blocks than present', self.input, self.__linenum)
                     self.__ifblocks = []
                     self.__ifconditions = []
                 return False, True
@@ -188,6 +237,7 @@ class preprocessor:
                 print('Warning: Number of unclosed Ifdefblocks: ',len(self.__ifblocks))
                 print('Can cause unwished behaviour in the preprocessed code, preprocessor is safe')
                 if input('Do you want more Information? ').lower() in ('yes','true','t','1'):
+                    print('Name of input and output file: ',self.input,' ',self.output)
                     for i, item in enumerate(self.__ifconditions):
                         if (item in self.defines) != self.__ifblocks[i]:
                             cond = ' else '
