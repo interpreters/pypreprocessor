@@ -1,3 +1,5 @@
 *.pyc
 dist/
 build/
+test_out.py
+tmp_test.py
