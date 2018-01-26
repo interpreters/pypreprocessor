@@ -27,7 +27,7 @@
 * useful if you need to run a file in different modes
 * eliminates the need for decision logic in the preprocessor itself
 
-**nested #ifdef directives are supported
+**nested #ifdef directives are supported**
 
 * helpfull for more complicated code
 * #endifall gives the opportunity to end all open blocks
@@ -49,6 +49,7 @@
 * or it can pre-process and run code transparently the same way as c-style languages do
 
 **Simple**
+
 * the source footprint for the pypreprocessor code is very small
 * the preprocessor is designed to be as simple and lightweight as possible
 
@@ -112,6 +113,7 @@ add defines to the preprocessor programmatically, this allows the source file to
 pypreprocessor.mode = 'Run' / 'PP' / 'PPCont'
 ```
 set the mode of the preprocessor:
+
 * Run: PreProcess the code and Run it
 * PP: PreProcess the code and save the file, afterwards close
 * PPCont: PreProcessContinue after a file is preprocessed and saved the preprocessor is reseted and can preprocess a next file
