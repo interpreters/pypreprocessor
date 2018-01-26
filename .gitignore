@@ -3,3 +3,4 @@ dist/
 build/
 test_out.py
 tmp_test.py
+pypreprocessor.egg-info
