@@ -1,8 +1,23 @@
 #!/usr/bin/env python
 # pypreprocessor's setup.py
 
-from distutils.core import setup
+# dependencies
+# - pandoc - `sudo apt install pandoc`
+# - pypandoc - `sudo pip install pypandoc`
+
+# To update:
+# - python setup.py sdist upload
+
+#from distutils.core import setup
+from setuptools import setup
 from pypreprocessor import __version__, __author__
+try:
+    import pypandoc
+    print('Creating README.rst')
+    long_description = pypandoc.convert('README.md', 'rst')
+except(IOError, ImportError):
+    print('ERROR: pandoc not installed')
+    exit(1)
 
 setup(
     name = "pypreprocessor",
@@ -11,9 +26,9 @@ setup(
     description = "Run c-style preprocessor directives in python modules",
     author = __author__,
     author_email = "evanplaice@gmail.com",
-    url = "https://github.com/evanplaice/pypreprocessor",
+    url = "https://github.com/interpreters/pypreprocessor",
     packages=['pypreprocessor'],
-    long_description = open('README.md').read(),
+    long_description = long_description,
     license = open('LICENSE').read(),
     keywords = ["python", "preprocessor", "meta"],
     platforms = "all",
@@ -34,6 +49,3 @@ setup(
         "Topic :: Software Development :: Code Generators",
     ]
 )
-
-# To update run
-# python setup.py sdist upload -r pypi
