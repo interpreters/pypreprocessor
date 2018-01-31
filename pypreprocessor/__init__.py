@@ -12,13 +12,13 @@ import imp
 
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='',
-                 defines=[], removeMeta=False, escapeChar = '#', mode='Run'):
+                 defines=[], removeMeta=False, escape = '#', mode='Run'):
         # public variables
         self.defines = defines
         self.input = inFile
         self.output = outFile
         self.removeMeta = removeMeta
-        self.escapeChar = escapeChar
+        self.escape = escape
         self.mode=mode
         # private variables
         self.__linenum = 0
@@ -67,74 +67,74 @@ class preprocessor:
             if 'pypreprocessor.parse()' in line:
                 return True, True
             #this block only for faster processing (not necessary)
-            elif line[:1] != self.escapeChar:
+            elif line[:len(self.escape)] != self.escape:
                 return False, False
         # handle #define directives
-        if line[:7] == self.escapeChar + 'define':
+        if line[:len(self.escape) + 6] == self.escape + 'define':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'define')
+                self.exit_error(self.escape + 'define')
             else:
                 self.define(line.split()[1])
                 return False, True
         # handle #undef directives
-        elif line[:6] == self.escapeChar + 'undef':
+        elif line[:len(self.escape) + 5] == self.escape + 'undef':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'undef')
+                self.exit_error(self.escape + 'undef')
             else:
                 self.undefine(line.split()[1])
                 return False, True
         # handle #exclude directives
-        elif line[:8] == self.escapeChar + 'exclude':
+        elif line[:len(self.escape) + 7] == self.escape + 'exclude':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'exclude')
+                self.exit_error(self.escape + 'exclude')
             else:
                 self.__excludeblock = True
                 return False, True
         # handle #endexclude directives
-        elif line[:11] == self.escapeChar + 'endexclude':
+        elif line[:len(self.escape) + 10] == self.escape + 'endexclude':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endexclude')
+                self.exit_error(self.escape + 'endexclude')
             else:
                 self.__excludeblock = False
                 return False, True  
         # handle #ifnotdef directives (is the same as: #ifdef X #else)
-        elif line[:9] == self.escapeChar + 'ifdefnot':
+        elif line[:len(self.escape) + 8] == self.escape + 'ifdefnot':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'ifdefnot')
+                self.exit_error(self.escape + 'ifdefnot')
             else:
                 self.__ifblocks.append(not(self.search_defines(line.split()[1])))
                 self.__ifconditions.append(line.split()[1])  
                 return False, True
         # handle #ifdef directives
-        elif line[:6] == self.escapeChar + 'ifdef':
+        elif line[:len(self.escape) + 5] == self.escape + 'ifdef':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'ifdef')
+                self.exit_error(self.escape + 'ifdef')
             else:
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
                 self.__ifconditions.append(line.split()[1])  
                 return False, True
         # handle #else...
         # handle #elseif directives
-        elif line[:7] == self.escapeChar + 'elseif':
+        elif line[:len(self.escape) + 6] == self.escape + 'elseif':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'elseif')
+                self.exit_error(self.escape + 'elseif')
             else:
                 self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
                 self.__ifconditions.append(line.split()[1]) 
             return False, True          
         # handle #else directives
-        elif line[:5] == self.escapeChar + 'else':
+        elif line[:len(self.escape) + 4] == self.escape + 'else':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'else')
+                self.exit_error(self.escape + 'else')
             else:
                 self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
             return False, True 
         # handle #endif.. 
         # handle #endififdef
-        elif line[:11] == self.escapeChar + 'endififdef':
+        elif line[:len(self.escape) + 10] == self.escape + 'endififdef':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'endififdef')
+                self.exit_error(self.escape + 'endififdef')
             else:
                 if len(self.__ifconditions)>=1:
                     self.__ifblocks.pop(-1)
@@ -146,23 +146,23 @@ class preprocessor:
                 self.__ifconditions.append(line.split()[1])  
                 return False, True          
         # handle #endifall directives
-        elif line[:9] == self.escapeChar + 'endifall':
+        elif line[:len(self.escape) + 8] == self.escape + 'endifall':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endifall')
+                self.exit_error(self.escape + 'endifall')
             else:
                 self.__ifblocks = []
                 self.__ifconditions = []
                 return False, True
         # handle #endif and #endif numb directives    
-        elif line[:6] == self.escapeChar + 'endif':
+        elif line[:len(self.escape) + 5] == self.escape + 'endif':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endif number')
+                self.exit_error(self.escape + 'endif number')
             else:
                 try:
                     number=int(line[6:])
                 except ValueError as VE:
                     #print('ValueError',VE)
-                    #self.exit_error(self.escapeChar + 'endif number')
+                    #self.exit_error(self.escape + 'endif number')
                     number=1
                 if len(self.__ifconditions)>number:
                     for i in range(0,number):
@@ -219,7 +219,7 @@ class preprocessor:
                     if metaData is True or squelch is True:
                         continue
                 if squelch is True:
-                    self.__outputBuffer += self.escapeChar + line
+                    self.__outputBuffer += self.escape + line
                     continue
                 if squelch is False:
                     self.__outputBuffer += line

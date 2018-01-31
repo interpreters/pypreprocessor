@@ -16,8 +16,8 @@ try:
     print('Creating README.rst')
     long_description = pypandoc.convert('README.md', 'rst')
 except(IOError, ImportError):
-    print('Pypandoc not installed, skipping README.rxt creation')
-    long_description = open('README.md').read();
+    print('Pypandoc not installed, skipping README.rst creation')
+    long_description = open('README.md').read()
 setup(
     name = "pypreprocessor",
     py_modules = ['pypreprocessor'],
@@ -28,7 +28,7 @@ setup(
     url = "https://github.com/interpreters/pypreprocessor",
     packages=['pypreprocessor'],
     long_description = long_description,
-    license = open('LICENSE').read(),
+    license = 'MIT',
     keywords = ["python", "preprocessor", "meta"],
     platforms = "all",
     classifiers = [
