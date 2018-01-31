@@ -16,9 +16,8 @@ try:
     print('Creating README.rst')
     long_description = pypandoc.convert('README.md', 'rst')
 except(IOError, ImportError):
-    print('ERROR: pandoc not installed')
-    exit(1)
-
+    print('Pypandoc not installed, skipping README.rxt creation')
+    long_description = open('README.md').read();
 setup(
     name = "pypreprocessor",
     py_modules = ['pypreprocessor'],
