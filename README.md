@@ -136,7 +136,8 @@ pypreprocessor.removeMeta = True
 set this to remove the metadata from the output, useful if you're generating a 'clean' version of the source
 
 ```python
-pypreprocessor.encoding = sys.stdout.encoding
+pypreprocessor.readEncoding = sys.stdin.encoding
+pypreprocessor.writeEncoding = sys.stdout.encoding
 ```
 set this to make preprocessor use encoding
 

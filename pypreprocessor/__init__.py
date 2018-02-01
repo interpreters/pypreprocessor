@@ -13,16 +13,18 @@ import imp
 
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='',
-                 defines=[], removeMeta=False, escape = '#', encoding=sys.stdin.encoding, run=True, resume=False):
+                 defines=[], removeMeta=False, escape = '#', run=True, resume=False, save = True):
         # public variables
         self.defines = defines
         self.input = inFile
         self.output = outFile
         self.removeMeta = removeMeta
         self.escape = escape
-        self.encoding = encoding
         self.run = run
-        self.resume = False
+        self.resume = resume
+        self.save = save
+        self.readEncoding = sys.stdin.encoding
+        self.writeEncoding = sys.stdout.encoding
         # private variables
         self.__linenum = 0
         self.__excludeblock = False
@@ -209,12 +211,8 @@ class preprocessor:
 
     # parsing/processing
     def parse(self):
-        if(self.output == ''):
-            self.save=False
-        else:
-            self.save=True
         # open the input file
-        input_file = open(os.path.join(self.input),'r', encoding=self.encoding)
+        input_file = open(os.path.join(self.input),'r', encoding=self.readEncoding)
         try:
             # process the input file
             for line in input_file:
@@ -259,7 +257,7 @@ class preprocessor:
             if self.output == '':
                 self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
             # open file for output
-            output_file = open(self.output, 'w', encoding=self.encoding)
+            output_file = open(self.output, 'w', encoding=self.writeEncoding)
             # write post-processed code to file
             output_file.write(self.__outputBuffer)
         finally:
@@ -298,7 +296,7 @@ class preprocessor:
     # postprocessor - on-the-fly execution
     def on_the_fly(self):
         try:
-            exec(open(self.output,"r", encoding=self.encoding).read())
+            exec(open(self.output,"r", encoding=self.readEncoding).read())
         except:
             self.rewrite_traceback()
         finally:
