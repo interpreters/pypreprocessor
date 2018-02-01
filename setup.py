@@ -28,7 +28,7 @@ setup(
     url = "https://github.com/interpreters/pypreprocessor",
     packages=['pypreprocessor'],
     long_description = long_description,
-    license = 'MIT',
+    license = open('LICENSE').read(),
     keywords = ["python", "preprocessor", "meta"],
     platforms = "all",
     classifiers = [
