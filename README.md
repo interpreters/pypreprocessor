@@ -116,9 +116,9 @@ pypreprocessor.save = True / False
 ```
 set the options of the preprocessor:
 
-* run: Run the preprocessed code if true
-* resume: Return after a file is preprocessed and can preprocess a next file if true
-* save: Save preprocessed code if true
+* run: Run the preprocessed code if true. Default is true
+* resume: Return after a file is preprocessed and can preprocess a next file if true. Default is false
+* save: Save preprocessed code if true. Default is true
 
 ```python
 pypreprocessor.input = 'inputFile.py'
