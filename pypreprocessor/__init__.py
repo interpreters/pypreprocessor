@@ -226,7 +226,10 @@ class preprocessor:
                     if metaData is True or squelch is True:
                         continue
                 if squelch is True:
-                    self.__outputBuffer += self.escape + line
+                    if(metaData):
+                        self.__outputBuffer += self.escape + line
+                    else:
+                        self.__outputBuffer += self.escape[0] + line
                     continue
                 if squelch is False:
                     self.__outputBuffer += line
