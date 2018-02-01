@@ -23,10 +23,6 @@ class preprocessor:
         self.encoding = encoding
         self.run = run
         self.resume = False
-        if(self.output == ''):
-            self.save=False
-        else:
-            self.save=True
         # private variables
         self.__linenum = 0
         self.__excludeblock = False
@@ -213,6 +209,10 @@ class preprocessor:
 
     # parsing/processing
     def parse(self):
+        if(self.output == ''):
+            self.save=False
+        else:
+            self.save=True
         # open the input file
         input_file = open(os.path.join(self.input),'r', encoding=self.encoding)
         try:
