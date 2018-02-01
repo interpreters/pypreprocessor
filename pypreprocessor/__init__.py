@@ -3,23 +3,29 @@
 
 __author__ = 'Evan Plaice'
 __coauthor__ = 'Hendi O L'
-__version__ = '0.72'
+__version__ = '0.74'
 
 import sys
 import os
 import traceback
 import imp
 
+
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='',
-                 defines=[], removeMeta=False, escape = '#', mode='Run'):
+                 defines=[], removeMeta=False, escape = '#', run=True, resume=False):
         # public variables
         self.defines = defines
         self.input = inFile
         self.output = outFile
         self.removeMeta = removeMeta
         self.escape = escape
-        self.mode=mode
+        self.run = run
+        self.resume = False
+        if(self.output == ''):
+            self.save=False
+        else:
+            self.save=True
         # private variables
         self.__linenum = 0
         self.__excludeblock = False
@@ -245,53 +251,30 @@ class preprocessor:
     # post-processor
     def post_process(self):
         try:
-            # preprocess file and run ist 
-            if self.mode == 'RUN' or self.mode == 'run' or self.mode == 'Run':
-                # tmp file name
-                self.output ='tmp_' + os.path.basename(self.input)
-            # preprocess and continue
-            elif self.mode == 'PPCONT' or self.mode == 'ppcont' or self.mode == 'PPCont':
-                # file name (no auto-run)           
-                if self.output == '':
-                    self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
-            # preprocess file and exit (choosen by PP, default, fallback)
-            else:
-                # 
-                if self.mode !='PP' and self.mode !='pp' and self.mode != 'Pp':
-                    print('Warning: undefined mode !! '+str(self.mode))
-                    print('Using mode: PP (preprocessing and closing)')
-                    self.mode='PP'
-                #  file name (no run)
-                if self.output == '':
-                    self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
-            #    
+            # set file name
+            if self.output == '':
+                self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
             # open file for output
             output_file = open(self.output, 'w')
             # write post-processed code to file
             output_file.write(self.__outputBuffer)
         finally:
             output_file.close()
-        # resolve postprocess stage depending on the mode
-        # preprocess file and run ist 
-        if self.mode == 'RUN' or self.mode == 'run' or self.mode == 'Run':
+
+        if(self.run):
             # if this module is loaded as a library override the import
             if imp.lock_held() is True:
-                    self.override_import()
+                self.override_import()
+                return
             else:
                 self.on_the_fly()
-                # break execution so python doesn't
-                # run the rest of the pre-processed code
-                sys.exit(0)
-        # preprocess file and exit
-        elif self.mode =='PP' or self.mode=='pp' or self.mode == 'Pp':
-            sys.exit(0)
-        #preprocess and continue
-        elif self.mode == 'PPCONT' or self.mode == 'ppcont' or self.mode == 'PPCont':
+        if(self.resume):
             self.__reset_internal()
-        #undefined mode
+            pass
         else:
-            self.exit_error('wrong mode in end of post-process')
-
+            # break execution so python doesn't
+            # run the rest of the pre-processed code
+            sys.exit(0)
 
     # postprocessor - override an import
     def override_import(self):
@@ -315,7 +298,8 @@ class preprocessor:
         except:
             self.rewrite_traceback()
         finally:
-            # remove tmp file
-            os.remove(self.output)
+            if(not self.save):
+                # remove tmp file
+                os.remove(self.output)
 
 pypreprocessor = preprocessor()
