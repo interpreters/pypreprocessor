@@ -296,7 +296,7 @@ class preprocessor:
     # postprocessor - on-the-fly execution
     def on_the_fly(self):
         try:
-            exec(open(self.output,"r", encoding=self.readEncoding).read(), globals())
+            exec(open(self.output,"r", encoding=self.readEncoding).read())
         except:
             self.rewrite_traceback()
         finally:
