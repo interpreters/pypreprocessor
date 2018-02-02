@@ -3,7 +3,7 @@
 
 __author__ = 'Evan Plaice'
 __coauthor__ = 'Hendi O L'
-__version__ = '0.74'
+__version__ = '0.75'
 
 import sys
 import os
@@ -13,12 +13,14 @@ import imp
 
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='',
-                 defines=[], removeMeta=False, escape = '#', run=True, resume=False, save = True):
+                 defines=[], removeMeta=False, escapeChar=None, mode=None, escape = '#', run=True, resume=False, save = True):
         # public variables
         self.defines = defines
         self.input = inFile
         self.output = outFile
         self.removeMeta = removeMeta
+        self.escapeChar = escapeChar
+        self.mode = mode
         self.escape = escape
         self.run = run
         self.resume = resume
@@ -32,7 +34,34 @@ class preprocessor:
         self.__ifconditions = []
         self.__evalsquelch = True
         self.__outputBuffer = ''
-    
+
+    def check_deprecation(self):
+        def deprecation(message):
+            import warnings
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+        if(self.escapeChar != None):
+            deprecation("'escapeChar' is deprecated. Use 'escape' instead.")
+            self.escape = self.escapeChar
+        if(self.mode != None):
+            deprecation("'mode' is deprecated. Use 'run/resum/save' options instead.")
+            if(self.mode.lower() == 'run'):
+                self.run = True
+                self.resume = False
+                self.save = False
+            elif(self.mode.lower() == 'pp'):
+                self.run = False
+                self.resume = False
+                self.save = True
+            elif(self.mode.lower() == 'ppcont'):
+                self.run = False
+                self.resume = True
+                self.save = True
+            elif(self.mode is not None):
+                print('Unknown mode : ' + str(self.mode))
+
+                
+        
+
     # reseting internal things to parse a second file
     def __reset_internal(self):
         self.__linenum = 0
@@ -211,6 +240,7 @@ class preprocessor:
 
     # parsing/processing
     def parse(self):
+        self.check_deprecation()
         # open the input file
         input_file = open(os.path.join(self.input),'r', encoding=self.readEncoding)
         try:
