@@ -2,7 +2,7 @@
 # pypreprocessor.py
 
 __author__ = 'Evan Plaice'
-__coauthor__ = 'Hendi O L'
+__coauthor__ = 'Hendi O L, Epikem'
 __version__ = '0.75'
 
 import sys
@@ -43,7 +43,7 @@ class preprocessor:
             deprecation("'escapeChar' is deprecated. Use 'escape' instead.")
             self.escape = self.escapeChar
         if(self.mode != None):
-            deprecation("'mode' is deprecated. Use 'run/resum/save' options instead.")
+            deprecation("'mode' is deprecated. Use 'run/resume/save' options instead.")
             if(self.mode.lower() == 'run'):
                 self.run = True
                 self.resume = False
