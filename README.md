@@ -44,7 +44,7 @@
 
 **Dynamic**
 
-* pypreprocessor has multiple modes of operation
+* pypreprocessor has multiple option of operation
 * it can generate a new post-processed version of a source file absent all of the preprocessor information
 * or it can pre-process and run code transparently the same way as c-style languages do
 
@@ -110,13 +110,15 @@ pypreprocessor.defines.append('define')
 add defines to the preprocessor programmatically, this allows the source file to have some decision logic to decide which 'defines' need to be set
 
 ```python
-pypreprocessor.mode = 'Run' / 'PP' / 'PPCont'
+pypreprocessor.run = True / False
+pypreprocessor.resume = True / False
+pypreprocessor.save = True / False
 ```
-set the mode of the preprocessor:
+set the options of the preprocessor:
 
-* Run: PreProcess the code and Run it
-* PP: PreProcess the code and save the file, afterwards close
-* PPCont: PreProcessContinue after a file is preprocessed and saved the preprocessor is reseted and can preprocess a next file
+* run: Run the preprocessed code if true. Default is true
+* resume: Return after a file is preprocessed and can preprocess a next file if true. Default is false
+* save: Save preprocessed code if true. Default is true
 
 ```python
 pypreprocessor.input = 'inputFile.py'
@@ -132,6 +134,12 @@ set this to get a user defined name for the output file, otherwise the default i
 pypreprocessor.removeMeta = True
 ```
 set this to remove the metadata from the output, useful if you're generating a 'clean' version of the source
+
+```python
+pypreprocessor.readEncoding = sys.stdin.encoding
+pypreprocessor.writeEncoding = sys.stdout.encoding
+```
+set this to make preprocessor use encoding
 
 ## Applications
 

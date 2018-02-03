@@ -2,24 +2,31 @@
 # pypreprocessor.py
 
 __author__ = 'Evan Plaice'
-__coauthor__ = 'Hendi O L'
-__version__ = '0.72'
+__coauthor__ = 'Hendi O L, Epikem'
+__version__ = '0.75'
 
 import sys
 import os
 import traceback
 import imp
 
+
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='',
-                 defines=[], removeMeta=False, escapeChar = '#', mode='Run'):
+                 defines=[], removeMeta=False, escapeChar=None, mode=None, escape = '#', run=True, resume=False, save = True):
         # public variables
         self.defines = defines
         self.input = inFile
         self.output = outFile
         self.removeMeta = removeMeta
         self.escapeChar = escapeChar
-        self.mode=mode
+        self.mode = mode
+        self.escape = escape
+        self.run = run
+        self.resume = resume
+        self.save = save
+        self.readEncoding = sys.stdin.encoding
+        self.writeEncoding = sys.stdout.encoding
         # private variables
         self.__linenum = 0
         self.__excludeblock = False
@@ -27,7 +34,34 @@ class preprocessor:
         self.__ifconditions = []
         self.__evalsquelch = True
         self.__outputBuffer = ''
-    
+
+    def check_deprecation(self):
+        def deprecation(message):
+            import warnings
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+        if(self.escapeChar != None):
+            deprecation("'escapeChar' is deprecated. Use 'escape' instead.")
+            self.escape = self.escapeChar
+        if(self.mode != None):
+            deprecation("'mode' is deprecated. Use 'run/resume/save' options instead.")
+            if(self.mode.lower() == 'run'):
+                self.run = True
+                self.resume = False
+                self.save = False
+            elif(self.mode.lower() == 'pp'):
+                self.run = False
+                self.resume = False
+                self.save = True
+            elif(self.mode.lower() == 'ppcont'):
+                self.run = False
+                self.resume = True
+                self.save = True
+            elif(self.mode is not None):
+                print('Unknown mode : ' + str(self.mode))
+
+                
+        
+
     # reseting internal things to parse a second file
     def __reset_internal(self):
         self.__linenum = 0
@@ -67,74 +101,74 @@ class preprocessor:
             if 'pypreprocessor.parse()' in line:
                 return True, True
             #this block only for faster processing (not necessary)
-            elif line[:1] != self.escapeChar:
+            elif line[:len(self.escape)] != self.escape:
                 return False, False
         # handle #define directives
-        if line[:7] == self.escapeChar + 'define':
+        if line[:len(self.escape) + 6] == self.escape + 'define':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'define')
+                self.exit_error(self.escape + 'define')
             else:
                 self.define(line.split()[1])
                 return False, True
         # handle #undef directives
-        elif line[:6] == self.escapeChar + 'undef':
+        elif line[:len(self.escape) + 5] == self.escape + 'undef':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'undef')
+                self.exit_error(self.escape + 'undef')
             else:
                 self.undefine(line.split()[1])
                 return False, True
         # handle #exclude directives
-        elif line[:8] == self.escapeChar + 'exclude':
+        elif line[:len(self.escape) + 7] == self.escape + 'exclude':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'exclude')
+                self.exit_error(self.escape + 'exclude')
             else:
                 self.__excludeblock = True
                 return False, True
         # handle #endexclude directives
-        elif line[:11] == self.escapeChar + 'endexclude':
+        elif line[:len(self.escape) + 10] == self.escape + 'endexclude':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endexclude')
+                self.exit_error(self.escape + 'endexclude')
             else:
                 self.__excludeblock = False
                 return False, True  
         # handle #ifnotdef directives (is the same as: #ifdef X #else)
-        elif line[:9] == self.escapeChar + 'ifdefnot':
+        elif line[:len(self.escape) + 8] == self.escape + 'ifdefnot':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'ifdefnot')
+                self.exit_error(self.escape + 'ifdefnot')
             else:
                 self.__ifblocks.append(not(self.search_defines(line.split()[1])))
                 self.__ifconditions.append(line.split()[1])  
                 return False, True
         # handle #ifdef directives
-        elif line[:6] == self.escapeChar + 'ifdef':
+        elif line[:len(self.escape) + 5] == self.escape + 'ifdef':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'ifdef')
+                self.exit_error(self.escape + 'ifdef')
             else:
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
                 self.__ifconditions.append(line.split()[1])  
                 return False, True
         # handle #else...
         # handle #elseif directives
-        elif line[:7] == self.escapeChar + 'elseif':
+        elif line[:len(self.escape) + 6] == self.escape + 'elseif':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'elseif')
+                self.exit_error(self.escape + 'elseif')
             else:
                 self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
                 self.__ifconditions.append(line.split()[1]) 
             return False, True          
         # handle #else directives
-        elif line[:5] == self.escapeChar + 'else':
+        elif line[:len(self.escape) + 4] == self.escape + 'else':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'else')
+                self.exit_error(self.escape + 'else')
             else:
                 self.__ifblocks[-1]=not(self.__ifblocks[-1])#self.search_defines(self.__ifconditions[-1]))
             return False, True 
         # handle #endif.. 
         # handle #endififdef
-        elif line[:11] == self.escapeChar + 'endififdef':
+        elif line[:len(self.escape) + 10] == self.escape + 'endififdef':
             if len(line.split()) != 2:
-                self.exit_error(self.escapeChar + 'endififdef')
+                self.exit_error(self.escape + 'endififdef')
             else:
                 if len(self.__ifconditions)>=1:
                     self.__ifblocks.pop(-1)
@@ -146,23 +180,23 @@ class preprocessor:
                 self.__ifconditions.append(line.split()[1])  
                 return False, True          
         # handle #endifall directives
-        elif line[:9] == self.escapeChar + 'endifall':
+        elif line[:len(self.escape) + 8] == self.escape + 'endifall':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endifall')
+                self.exit_error(self.escape + 'endifall')
             else:
                 self.__ifblocks = []
                 self.__ifconditions = []
                 return False, True
         # handle #endif and #endif numb directives    
-        elif line[:6] == self.escapeChar + 'endif':
+        elif line[:len(self.escape) + 5] == self.escape + 'endif':
             if len(line.split()) != 1:
-                self.exit_error(self.escapeChar + 'endif number')
+                self.exit_error(self.escape + 'endif number')
             else:
                 try:
                     number=int(line[6:])
                 except ValueError as VE:
                     #print('ValueError',VE)
-                    #self.exit_error(self.escapeChar + 'endif number')
+                    #self.exit_error(self.escape + 'endif number')
                     number=1
                 if len(self.__ifconditions)>number:
                     for i in range(0,number):
@@ -206,8 +240,9 @@ class preprocessor:
 
     # parsing/processing
     def parse(self):
+        self.check_deprecation()
         # open the input file
-        input_file = open(os.path.join(self.input),'r')
+        input_file = open(os.path.join(self.input),'r', encoding=self.readEncoding)
         try:
             # process the input file
             for line in input_file:
@@ -219,7 +254,10 @@ class preprocessor:
                     if metaData is True or squelch is True:
                         continue
                 if squelch is True:
-                    self.__outputBuffer += self.escapeChar + line
+                    if(metaData):
+                        self.__outputBuffer += self.escape + line
+                    else:
+                        self.__outputBuffer += self.escape[0] + line
                     continue
                 if squelch is False:
                     self.__outputBuffer += line
@@ -245,53 +283,30 @@ class preprocessor:
     # post-processor
     def post_process(self):
         try:
-            # preprocess file and run ist 
-            if self.mode == 'RUN' or self.mode == 'run' or self.mode == 'Run':
-                # tmp file name
-                self.output ='tmp_' + os.path.basename(self.input)
-            # preprocess and continue
-            elif self.mode == 'PPCONT' or self.mode == 'ppcont' or self.mode == 'PPCont':
-                # file name (no auto-run)           
-                if self.output == '':
-                    self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
-            # preprocess file and exit (choosen by PP, default, fallback)
-            else:
-                # 
-                if self.mode !='PP' and self.mode !='pp' and self.mode != 'Pp':
-                    print('Warning: undefined mode !! '+str(self.mode))
-                    print('Using mode: PP (preprocessing and closing)')
-                    self.mode='PP'
-                #  file name (no run)
-                if self.output == '':
-                    self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
-            #    
+            # set file name
+            if self.output == '':
+                self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
             # open file for output
-            output_file = open(self.output, 'w')
+            output_file = open(self.output, 'w', encoding=self.writeEncoding)
             # write post-processed code to file
             output_file.write(self.__outputBuffer)
         finally:
             output_file.close()
-        # resolve postprocess stage depending on the mode
-        # preprocess file and run ist 
-        if self.mode == 'RUN' or self.mode == 'run' or self.mode == 'Run':
+
+        if(self.run):
             # if this module is loaded as a library override the import
             if imp.lock_held() is True:
-                    self.override_import()
+                self.override_import()
+                return
             else:
                 self.on_the_fly()
-                # break execution so python doesn't
-                # run the rest of the pre-processed code
-                sys.exit(0)
-        # preprocess file and exit
-        elif self.mode =='PP' or self.mode=='pp' or self.mode == 'Pp':
-            sys.exit(0)
-        #preprocess and continue
-        elif self.mode == 'PPCONT' or self.mode == 'ppcont' or self.mode == 'PPCont':
+        if(self.resume):
             self.__reset_internal()
-        #undefined mode
+            pass
         else:
-            self.exit_error('wrong mode in end of post-process')
-
+            # break execution so python doesn't
+            # run the rest of the pre-processed code
+            sys.exit(0)
 
     # postprocessor - override an import
     def override_import(self):
@@ -311,11 +326,12 @@ class preprocessor:
     # postprocessor - on-the-fly execution
     def on_the_fly(self):
         try:
-            exec(open(self.output,"rb").read())
+            exec(open(self.output,"r", encoding=self.readEncoding).read())
         except:
             self.rewrite_traceback()
         finally:
-            # remove tmp file
-            os.remove(self.output)
+            if(not self.save):
+                # remove tmp file
+                os.remove(self.output)
 
 pypreprocessor = preprocessor()
