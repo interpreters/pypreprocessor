@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 #!/usr/bin/env python
 # pypreprocessor's setup.py
 
@@ -8,8 +9,42 @@
 # To update:
 # - python setup.py sdist upload
 
-#from distutils.core import setup
-from setuptools import setup
+import sys
+try:
+    from setuptools import Command, setup
+except ImportError:
+    from distutils.core import Command, setup
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
+class RunTests(Command):
+
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        if(sys.stdout.encoding == 'utf-8'):
+            print('╭─────────────────────────────────────╮')
+            print('│                                     │')
+            print('│              Test Start             │')
+            print('│                                     │')
+            print('╰─────────────────────────────────────╯')
+        else:
+            print('Test Start')
+        import tests
+        testSuite = unittest.TestSuite(tests.testsuite())
+        runner = unittest.TextTestRunner(verbosity=2)
+        results = runner.run(testSuite)
+        sys.exit(0 if results.wasSuccessful() else 1)
+        pass
+
 from pypreprocessor import __version__, __author__
 try:
     import pypandoc
@@ -31,6 +66,9 @@ setup(
     license = open('LICENSE').read(),
     keywords = ["python", "preprocessor", "meta"],
     platforms = "all",
+    cmdclass={
+        'test': RunTests,
+    },
     classifiers = [
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.5",
