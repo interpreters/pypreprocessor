@@ -3,14 +3,13 @@
 
 __author__ = 'Evan Plaice'
 __coauthor__ = 'Hendi O L, Epikem'
-__version__ = '0.75'
+__version__ = '0.76'
 
 import sys
 import os
 import traceback
 import imp
-
-
+import io
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='',
                  defines=[], removeMeta=False, escapeChar=None, mode=None, escape = '#', run=True, resume=False, save = True):
@@ -38,29 +37,33 @@ class preprocessor:
     def check_deprecation(self):
         def deprecation(message):
             import warnings
-            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            warnings.simplefilter('always', DeprecationWarning)
+            warnings.warn(message, DeprecationWarning)
+            warnings.simplefilter('default', DeprecationWarning)
         if(self.escapeChar != None):
-            deprecation("'escapeChar' is deprecated. Use 'escape' instead.")
-            self.escape = self.escapeChar
+            deprecation("'pypreprocessor.escapeChar' is deprecated. Use 'escape' instead.")
+            if(self.escape == '#'):
+                self.escape = self.escapeChar
         if(self.mode != None):
-            deprecation("'mode' is deprecated. Use 'run/resume/save' options instead.")
-            if(self.mode.lower() == 'run'):
-                self.run = True
-                self.resume = False
-                self.save = False
-            elif(self.mode.lower() == 'pp'):
-                self.run = False
-                self.resume = False
-                self.save = True
-            elif(self.mode.lower() == 'ppcont'):
-                self.run = False
-                self.resume = True
-                self.save = True
-            elif(self.mode is not None):
-                print('Unknown mode : ' + str(self.mode))
-
-                
-        
+            msg = "'pypreprocessor.mode' is deprecated. Use 'run/resume/save' options instead."
+            if(self.run != True or self.resume != False or self.save != True):
+                msg += " Ignoring 'pypreprocessor.mode'."
+            else:
+                if(self.mode.lower() == 'run'):
+                    self.run = True
+                    self.resume = False
+                    self.save = False
+                elif(self.mode.lower() == 'pp'):
+                    self.run = False
+                    self.resume = False
+                    self.save = True
+                elif(self.mode.lower() == 'ppcont'):
+                    self.run = False
+                    self.resume = True
+                    self.save = True
+                elif(self.mode is not None):
+                    print('Unknown mode : ' + str(self.mode))
+            deprecation(msg)
 
     # reseting internal things to parse a second file
     def __reset_internal(self):
@@ -221,8 +224,6 @@ class preprocessor:
             else:
                 return False, False   
 
-
-
     # error handling
     def exit_error(self, directive):
         print('File: "' + self.input + '", line ' + str(self.__linenum))
@@ -240,9 +241,10 @@ class preprocessor:
 
     # parsing/processing
     def parse(self):
+        self.__reset_internal()
         self.check_deprecation()
         # open the input file
-        input_file = open(os.path.join(self.input),'r', encoding=self.readEncoding)
+        input_file = io.open(os.path.join(self.input),'r', encoding=self.readEncoding)
         try:
             # process the input file
             for line in input_file:
@@ -268,16 +270,19 @@ class preprocessor:
             if self.__ifblocks:
                 print('Warning: Number of unclosed Ifdefblocks: ',len(self.__ifblocks))
                 print('Can cause unwished behaviour in the preprocessed code, preprocessor is safe')
-                if input('Do you want more Information? ').lower() in ('yes','true','t','1'):
+                try:
+                    select = input('Do you want more Information? ')
+                except SyntaxError:
+                    select = 'no'
+                select = select.lower()
+                if select in ('yes','true','y','1'):
                     print('Name of input and output file: ',self.input,' ',self.output)
                     for i, item in enumerate(self.__ifconditions):
                         if (item in self.defines) != self.__ifblocks[i]:
                             cond = ' else '
                         else:
                             cond = ' if '
-                        print('Block:',item, ' is in condition: ',cond )                    
-                    
-                
+                        print('Block:',item, ' is in condition: ',cond )        
         self.post_process()
 
     # post-processor
@@ -287,7 +292,7 @@ class preprocessor:
             if self.output == '':
                 self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
             # open file for output
-            output_file = open(self.output, 'w', encoding=self.writeEncoding)
+            output_file = io.open(self.output, 'w', encoding=self.writeEncoding)
             # write post-processed code to file
             output_file.write(self.__outputBuffer)
         finally:
@@ -297,13 +302,13 @@ class preprocessor:
             # if this module is loaded as a library override the import
             if imp.lock_held() is True:
                 self.override_import()
-                return
             else:
                 self.on_the_fly()
-        if(self.resume):
-            self.__reset_internal()
-            pass
-        else:
+        if(not self.save):
+            # remove tmp file
+            if(os.path.exists(self.output)):
+                os.remove(self.output)
+        if(not self.resume):
             # break execution so python doesn't
             # run the rest of the pre-processed code
             sys.exit(0)
@@ -326,12 +331,10 @@ class preprocessor:
     # postprocessor - on-the-fly execution
     def on_the_fly(self):
         try:
-            exec(open(self.output,"r", encoding=self.readEncoding).read())
+            f = io.open(self.output,"r", encoding=self.readEncoding)
+            exec(f.read())
+            f.close()
         except:
             self.rewrite_traceback()
-        finally:
-            if(not self.save):
-                # remove tmp file
-                os.remove(self.output)
 
 pypreprocessor = preprocessor()
