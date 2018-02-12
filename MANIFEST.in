@@ -1,0 +1,6 @@
+include LICENSE
+include README.md
+include INSTALL.md
+include setup.py
+include tests/__init__.py
+include pypreprocessor/__init__.py
