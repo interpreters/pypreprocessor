@@ -8,8 +8,6 @@ try:
     import unittest2 as unittest
 except ImportError:
     import unittest
-from tests import maintest
-from tests import deprecationtest
 
 class RunTests(Command):
 
@@ -30,8 +28,9 @@ class RunTests(Command):
             print('╰─────────────────────────────────────╯')
         else:
             print('Test Start')
-        import tests
-        testSuite = unittest.TestSuite(tests.testsuite())
+        from tests import maintest
+        from tests import deprecationtest
+        testSuite = unittest.TestSuite(testsuite())
         runner = unittest.TextTestRunner(verbosity=2)
         results = runner.run(testSuite)
         sys.exit(0 if results.wasSuccessful() else 1)
