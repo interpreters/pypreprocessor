@@ -8,8 +8,13 @@
 # To update:
 # - python setup.py sdist upload
 
-#from distutils.core import setup
-from setuptools import setup
+import sys
+try:
+    from setuptools import Command, setup
+except ImportError:
+    from distutils.core import Command, setup
+from tests import RunTests
+
 from pypreprocessor import __version__, __author__
 try:
     import pypandoc
@@ -31,6 +36,9 @@ setup(
     license = open('LICENSE').read(),
     keywords = ["python", "preprocessor", "meta"],
     platforms = "all",
+    cmdclass={
+        'test': RunTests,
+    },
     classifiers = [
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.5",
