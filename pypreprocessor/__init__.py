@@ -3,7 +3,7 @@
 
 __author__ = 'Evan Plaice'
 __coauthor__ = 'Hendi O L, Epikem'
-__version__ = '0.76'
+__version__ = '0.7.7'
 
 import sys
 import os
