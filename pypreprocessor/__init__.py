@@ -107,6 +107,8 @@ class preprocessor:
             #this block only for faster processing (not necessary)
             elif line[:len(self.escape)] != self.escape:
                 return False, False
+        # strip any and all leading whitespace characters
+        line = line.lstrip()
         # handle #define directives
         if line[:len(self.escape) + 6] == self.escape + 'define':
             if len(line.split()) != 2:
