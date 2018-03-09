@@ -100,15 +100,15 @@ class preprocessor:
 
     # evaluate
     def lexer(self, line):
-    # return values are (squelch, metadata)
+        # strip any and all leading whitespace characters
+        line = line.lstrip()
+        # return values are (squelch, metadata)
         if not (self.__ifblocks or self.__excludeblock):
             if 'pypreprocessor.parse()' in line:
                 return True, True
             #this block only for faster processing (not necessary)
             elif line[:len(self.escape)] != self.escape:
                 return False, False
-        # strip any and all leading whitespace characters
-        line = line.lstrip()
         # handle #define directives
         if line[:len(self.escape) + 6] == self.escape + 'define':
             if len(line.split()) != 2:
