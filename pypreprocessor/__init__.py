@@ -14,9 +14,8 @@ import collections
 
 
 class preprocessor:
-    def __init__(self, inFile=sys.argv[0], outFile='', defines={}, \
-            removeMeta=False, escapeChar=None, mode=None, escape='#', \
-            run=True, resume=False, save=True):
+    def __init__(self, inFile=sys.argv[0], outFile='', defines={}, removeMeta=False, 
+                 escapeChar=None, mode=None, escape='#', run=True, resume=False, save=True):
         # public variables
         #support for <=0.7.7
         if isinstance(defines, collections.Sequence):
@@ -76,7 +75,6 @@ class preprocessor:
         self.__excludeblock = False
         self.__ifblocks = [] # contains the evaluated if conditions 
         self.__ifconditions = [] # contains the if conditions
-        self.__evalsquelch = True
         self.__outputBuffer = ''
 
     # the #define directive
@@ -103,8 +101,28 @@ class preprocessor:
         return eval(line, self.defines)
 
     #returning: validness of #ifdef #else block
-    def __if(self):
-        return not (self.__ifblocks and all(self.__ifblocks))
+    def __validate_ifs(self):
+        # no ifs mean we pass else check all ifs are True
+        return not self.__ifblocks and all(self.__ifblocks)
+
+    def __is_directive(self, line, directive, *size):
+        """
+            Checks the `line` is a `directive` and , if `size` is provided, checks its number of 
+            elements is amongst the list of allowed `size` 
+
+        :params:
+            line (str): line to check
+
+            directive (str): directive to be found in the `line`
+
+            *size (int): list of allowed number of elements to compose the directive. Can be empty
+        
+        """
+        if line.startswith(self.escape + directive):
+            if size and len(line.split()) not in size:
+                self.exit_error(self.escape + directive)
+            return True
+        return False
 
     # evaluate
     def lexer(self, line):
@@ -112,131 +130,90 @@ class preprocessor:
         if not (self.__ifblocks or self.__excludeblock):
             if 'pypreprocessor.parse()' in line:
                 return True, True
-            #this block only for faster processing (not necessary)
-            elif line[:len(self.escape)] != self.escape:
-                return False, False
-        # handle #define directives
-        if line[:len(self.escape) + 6] == self.escape + 'define':
-            if len(line.split()) != 2:
-                self.exit_error(self.escape + 'define')
-            else:
-                self.define(line.split()[1])
-                return False, True
-        # handle #undef directives
-        elif line[:len(self.escape) + 5] == self.escape + 'undef':
-            if len(line.split()) != 2:
-                self.exit_error(self.escape + 'undef')
-            else:
-                self.undefine(line.split()[1])
-                return False, True
-        # handle #exclude directives
-        elif line[:len(self.escape) + 7] == self.escape + 'exclude':
-            if len(line.split()) != 1:
-                self.exit_error(self.escape + 'exclude')
-            else:
-                self.__excludeblock = True
-                return False, True
-        # handle #endexclude directives
-        elif line[:len(self.escape) + 10] == self.escape + 'endexclude':
-            if len(line.split()) != 1:
-                self.exit_error(self.escape + 'endexclude')
-            else:
-                self.__excludeblock = False
-                return False, True
-        # handle #ifnotdef directives (is the same as: #ifdef X #else)
-        elif line[:len(self.escape) + 8] == self.escape + 'ifdefnot':
-            if len(line.split()) != 2:
-                self.exit_error(self.escape + 'ifdefnot')
-            else:
-                self.__ifblocks.append(not self.search_defines(line.split()[1]))
-                self.__ifconditions.append(line.split()[1])
-                return False, True
-        # handle #ifdef directives
-        elif line[:len(self.escape) + 5] == self.escape + 'ifdef':
-            if len(line.split()) != 2:
-                self.exit_error(self.escape + 'ifdef')
-            else:
-                self.__ifblocks.append(self.search_defines(line.split()[1]))
-                self.__ifconditions.append(line.split()[1])
-                return False, True
-        # handle #else...
-        # handle #elseif directives
-        elif line[:len(self.escape) + 2] == self.escape + 'if':
-            if len(line.split()) > 2:
-                self.exit_error(self.escape + 'elseif')
-            else:
-                self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
-                self.__ifconditions.append(' '.join(line.split()[1:]))
-            return False, True
+
+        # put that block here for faster processing
+        if not line.startswith(self.escape): #No directive --> execute
+            # exclude=True if we are in an exclude block or the ifs are not validated
+            return self.__excludeblock or not self.__validate_ifs(), False
+
+        elif self.__is_directive(line, 'define', 2,3):
+            self.define(*line.split()[1:])
+
+        elif self.__is_directive(line, 'undef', 2):
+            self.undefine(line.split()[1])
+
+        elif self.__is_directive(line, 'exclude', 1):
+            self.__excludeblock = True
+
+        elif self.__is_directive(line, 'endexclude', 1):
+            self.__excludeblock = False
+
+        elif self.__is_directive(line, 'ifdefnot', 2):
+            self.__ifblocks.append(not self.search_defines(line.split()[1]))
+            self.__ifconditions.append(line.split()[1])
+
+        elif self.__is_directive(line, 'ifdef', 2):
+            self.__ifblocks.append(self.search_defines(line.split()[1]))
+            self.__ifconditions.append(line.split()[1])
+
+        elif self.__is_directive(line, 'if'):
+            self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
+            self.__ifconditions.append(' '.join(line.split()[1:]))
 
         # since in version <=0.7.7, it didn't handle #if it should be #elseifdef instead.
         # kept elseif with 2 elements for retro-compatibility (equivalent to #elseifdef).
-        elif line[:len(self.escape) + 6] == self.escape + 'elseif':
-            if len(line.split()) != 2:
-                self.exit_error(self.escape + 'elseif')
-            else:
-                if len(line.split()) == 2:
-                    #old behaviour
-                    self.__ifblocks.append(self.search_defines(line.split()[1]))
-                else:
-                    #new behaviour
-                    self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
-                self.__ifconditions.append(' '.join(line.split()[1:]))
-            return False, True
-        # handle #else directives
-        elif line[:len(self.escape) + 4] == self.escape + 'else':
-            if len(line.split()) != 1:
-                self.exit_error(self.escape + 'else')
-            else:
-                self.__ifblocks[-1] = not self.__ifblocks[-1]
-                  #self.search_defines(self.__ifconditions[-1]))
-            return False, True
-        # handle #endif..
-        # handle #endififdef
-        elif line[:len(self.escape) + 10] == self.escape + 'endififdef':
-            if len(line.split()) != 2:
-                self.exit_error(self.escape + 'endififdef')
-            else:
-                if len(self.__ifconditions) >= 1:
-                    self.__ifblocks.pop(-1)
-                    self.__ifcondition = self.__ifconditions.pop(-1)
-                else:
-                    self.__ifblocks = []
-                    self.__ifconditions = []
+        elif self.__is_directive(line, 'elseif'):
+            # do else
+            self.__ifblocks[-1] = not self.__ifblocks[-1] 
+            # do if
+            if len(line.split()) == 2:
+                #old behaviour
                 self.__ifblocks.append(self.search_defines(line.split()[1]))
-                self.__ifconditions.append(line.split()[1])
-                return False, True
-        # handle #endifall directives
-        elif line[:len(self.escape) + 8] == self.escape + 'endifall':
-            if len(line.split()) != 1:
-                self.exit_error(self.escape + 'endifall')
             else:
+                #new behaviour
+                self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
+            self.__ifconditions.append(' '.join(line.split()[1:]))
+ 
+        elif self.__is_directive(line, 'else', 1):
+            self.__ifblocks[-1] = not self.__ifblocks[-1] #opposite of last if
+
+        elif self.__is_directive(line, 'endififdef', 2):
+            # do endif
+            if len(self.__ifconditions) >= 1:
+                self.__ifblocks.pop(-1)
+                self.__ifconditions.pop(-1)
+            # do ifdef
+            self.__ifblocks.append(self.search_defines(line.split()[1]))
+            self.__ifconditions.append(line.split()[1])
+
+        elif self.__is_directive(line, 'endifall', 1):
+            self.__ifblocks = []
+            self.__ifconditions = []
+
+        # handle #endif and #endif<numb> directives
+        elif self.__is_directive(line, 'endif', 1):
+            try:
+                number = int(line[6:])
+            except ValueError as VE:
+                number = 1
+
+            if len(self.__ifconditions) >= number:
+                for i in range(0, number):
+                    self.__ifblocks.pop(-1)
+                    self.__ifconditions.pop(-1)
+            else:
+                print('Warning trying to remove more blocks than present', \
+                    self.input, self.__linenum)
                 self.__ifblocks = []
                 self.__ifconditions = []
-                return False, True
-        # handle #endif and #endif numb directives
-        elif line[:len(self.escape) + 5] == self.escape + 'endif':
-            if len(line.split()) != 1:
-                self.exit_error(self.escape + 'endif number')
-            else:
-                try:
-                    number = int(line[6:])
-                except ValueError as VE:
-                    #print('ValueError',VE)
-                    #self.exit_error(self.escape + 'endif number')
-                    number = 1
-                if len(self.__ifconditions) > number:
-                    for i in range(0, number):
-                        self.__ifblocks.pop(-1)
-                        self.__ifcondition = self.__ifconditions.pop(-1)
-                else:
-                    print('Warning try to remove more blocks than present', \
-                      self.input, self.__linenum)
-                    self.__ifblocks = []
-                    self.__ifconditions = []
-                return False, True
-        else: #No directive --> execute
-            return self.__excludeblock or self.__ifblocks, False
+
+        else: 
+            # unknown directive or comment
+            if len(line.split()[0]) > 1:
+                print('Warning unknown directive or comment starting with ', \
+                        line.split()[0], self.input, self.__linenum)
+
+        return False, True
 
     # error handling
     def exit_error(self, directive):
@@ -258,22 +235,19 @@ class preprocessor:
         # open the input file
         try:
             with io.open(os.path.join(self.input), 'r', encoding=self.readEncoding) as input_file:
-                # process the input file
-                for line in input_file:
-                    self.__linenum += 1
-                    # to squelch or not to squelch
-                    squelch, metaData = self.lexer(line)
+                for self.__linenum, line in enumerate(input_file):
+                    exclude, metaData = self.lexer(line)
                     # process and output
-                    if self.removeMeta is True:
-                        if metaData is True or squelch is True:
+                    if self.removeMeta:
+                        if metaData or exclude:
                             continue
-                    if squelch is True:
+                    if exclude:
                         if metaData:
                             self.__outputBuffer += self.escape + line
                         else:
                             self.__outputBuffer += self.escape[0] + line
                         continue
-                    if squelch is False:
+                    else:
                         self.__outputBuffer += line
                         continue
         finally:
@@ -286,7 +260,7 @@ class preprocessor:
                 except SyntaxError:
                     select = 'no'
                 select = select.lower()
-                if select in ('yes', 'true', 'y', '1'):
+                if select.lower() in ('yes', 'true', 'y', '1'):
                     print('Name of input and output file: ', self.input, ' ', self.output)
                     for i, item in enumerate(self.__ifconditions):
                         if (item in self.defines) != self.__ifblocks[i]:
@@ -315,10 +289,12 @@ class preprocessor:
                 self.override_import()
             else:
                 self.on_the_fly()
+
         if not self.save:
             # remove tmp file
             if os.path.exists(self.output):
                 os.remove(self.output)
+
         if not self.resume:
             # break execution so python doesn't
             # run the rest of the pre-processed code
