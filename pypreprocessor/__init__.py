@@ -10,11 +10,17 @@ import os
 import traceback
 import imp
 import io
+import collections
+
+
 class preprocessor:
-    def __init__(self, inFile=sys.argv[0], outFile='', defines=[], \
+    def __init__(self, inFile=sys.argv[0], outFile='', defines={}, \
             removeMeta=False, escapeChar=None, mode=None, escape='#', \
             run=True, resume=False, save=True):
         # public variables
+        #support for <=0.7.7
+        if isinstance(defines, collections.Sequence):
+            defines = {x:None for x in defines} 
         self.defines = defines
         self.input = inFile
         self.output = outFile
@@ -37,10 +43,12 @@ class preprocessor:
             warnings.simplefilter('always', DeprecationWarning)
             warnings.warn(message, DeprecationWarning)
             warnings.simplefilter('default', DeprecationWarning)
+
         if self.escapeChar != None:
             deprecation("'pypreprocessor.escapeChar' is deprecated. Use 'escape' instead.")
             if self.escape == '#':
                 self.escape = self.escapeChar
+
         if self.mode != None:
             msg = "'pypreprocessor.mode' is deprecated. Use 'run/resume/save' options instead."
             if self.run != True or self.resume != False or self.save != True:
@@ -66,23 +74,33 @@ class preprocessor:
     def __reset_internal(self):
         self.__linenum = 0
         self.__excludeblock = False
-        self.__ifblocks = []
-        self.__ifconditions = []
+        self.__ifblocks = [] # contains the evaluated if conditions 
+        self.__ifconditions = [] # contains the if conditions
         self.__evalsquelch = True
         self.__outputBuffer = ''
 
     # the #define directive
     def define(self, define):
-        self.defines.append(define)
+        self.defines[define]=val
 
     # the #undef directive
     def undefine(self, define):
-        # re-map the defines list excluding the define specified in the args
-        self.defines[:] = [x for x in self.defines if x != define]
+        if define in self.defines:
+            self.defines.pop(define)
 
     # search: if define is defined
     def search_defines(self, define):
-        return define in self.defines:
+        return define in self.defines
+
+    def evaluate(self, line):
+        """
+            Evaluate the content of a #if, #elseif, #elif directive
+
+        :params
+            line (str): definition name
+            
+        """
+        return eval(line, self.defines)
 
     #returning: validness of #ifdef #else block
     def __if(self):
@@ -143,14 +161,27 @@ class preprocessor:
                 return False, True
         # handle #else...
         # handle #elseif directives
+        elif line[:len(self.escape) + 2] == self.escape + 'if':
+            if len(line.split()) > 2:
+                self.exit_error(self.escape + 'elseif')
+            else:
+                self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
+                self.__ifconditions.append(' '.join(line.split()[1:]))
+            return False, True
+
+        # since in version <=0.7.7, it didn't handle #if it should be #elseifdef instead.
+        # kept elseif with 2 elements for retro-compatibility (equivalent to #elseifdef).
         elif line[:len(self.escape) + 6] == self.escape + 'elseif':
             if len(line.split()) != 2:
                 self.exit_error(self.escape + 'elseif')
             else:
-                self.__ifblocks[-1] = not self.__ifblocks[-1]
-                  #self.search_defines(self.__ifconditions[-1]))
-                self.__ifblocks.append(self.search_defines(line.split()[1]))
-                self.__ifconditions.append(line.split()[1])
+                if len(line.split()) == 2:
+                    #old behaviour
+                    self.__ifblocks.append(self.search_defines(line.split()[1]))
+                else:
+                    #new behaviour
+                    self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
+                self.__ifconditions.append(' '.join(line.split()[1:]))
             return False, True
         # handle #else directives
         elif line[:len(self.escape) + 4] == self.escape + 'else':
