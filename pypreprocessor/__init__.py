@@ -189,7 +189,10 @@ class preprocessor:
         elif self.__is_directive(line, 'endexclude', 1):
             self.__excludeblock = False
 
-        elif self.__is_directive(line, 'ifdefnot', 2):
+        # #ifnotdef sounds better than #ifdefnot..
+        elif self.__is_directive(line, 'ifdefnot', 2) or \
+        self.__is_directive(line, 'ifnotdef', 2) or \
+        self.__is_directive(line, 'ifndef', 2):
             self.__ifblocks.append(not self.search_defines(line.split()[1]))
             self.__ifconditions.append(line.split()[1])
 
@@ -203,7 +206,8 @@ class preprocessor:
 
         # since in version <=0.7.7, it didn't handle #if it should be #elseifdef instead.
         # kept elseif with 2 elements for retro-compatibility (equivalent to #elseifdef).
-        elif self.__is_directive(line, 'elseif'):
+        elif self.__is_directive(line, 'elseif') or \
+        self.__is_directive(line, 'elif'):
             # do else
             self.__ifblocks[-1] = not self.__ifblocks[-1] 
             # do if
@@ -214,7 +218,14 @@ class preprocessor:
                 #new behaviour
                 self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
             self.__ifconditions.append(' '.join(line.split()[1:]))
- 
+
+        elif self.__is_directive(line, 'elseifdef', 2):
+            # do else
+            self.__ifblocks[-1] = not self.__ifblocks[-1] 
+            # do ifdef
+            self.__ifblocks.append(self.search_defines(line.split()[1]))
+            self.__ifconditions.append(line.split()[1])
+
         elif self.__is_directive(line, 'else', 1):
             self.__ifblocks[-1] = not self.__ifblocks[-1] #opposite of last if
 
