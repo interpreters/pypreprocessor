@@ -27,13 +27,9 @@ class preprocessor:
         self.save = save
         self.readEncoding = sys.stdin.encoding
         self.writeEncoding = sys.stdout.encoding
+
         # private variables
-        self.__linenum = 0
-        self.__excludeblock = False
-        self.__ifblocks = []
-        self.__ifconditions = []
-        self.__evalsquelch = True
-        self.__outputBuffer = ''
+        self.__reset_internal()
 
     def check_deprecation(self):
         def deprecation(message):
@@ -86,17 +82,11 @@ class preprocessor:
 
     # search: if define is defined
     def search_defines(self, define):
-        if define in self.defines:
-            return True
-        else:
-            return False
+        return define in self.defines:
 
     #returning: validness of #ifdef #else block
     def __if(self):
-        value = bool(self.__ifblocks)
-        for ib in self.__ifblocks:
-            value *= ib   #* represents and: value = value and ib
-        return not value    #not: because True means removing
+        return not (self.__ifblocks and all(self.__ifblocks))
 
     # evaluate
     def lexer(self, line):
@@ -208,9 +198,6 @@ class preprocessor:
                     for i in range(0, number):
                         self.__ifblocks.pop(-1)
                         self.__ifcondition = self.__ifconditions.pop(-1)
-                elif len(self.__ifconditions) == number:
-                    self.__ifblocks = []
-                    self.__ifconditions = []
                 else:
                     print('Warning try to remove more blocks than present', \
                       self.input, self.__linenum)
@@ -218,58 +205,47 @@ class preprocessor:
                     self.__ifconditions = []
                 return False, True
         else: #No directive --> execute
-            # process the excludeblock
-            if self.__excludeblock is True:
-                return True, False
-            # process the ifblock
-            elif self.__ifblocks: # is True:
-                return self.__if(), False
-            #here can add other stuff for deleting comnments eg
-            else:
-                return False, False
+            return self.__excludeblock or self.__ifblocks, False
 
     # error handling
     def exit_error(self, directive):
         print('File: "' + self.input + '", line ' + str(self.__linenum))
         print('SyntaxError: Invalid ' + directive + ' directive')
         sys.exit(1)
+
     def rewrite_traceback(self):
         trace = traceback.format_exc().splitlines()
-        index = 0
+        trace[-2]=trace[-2].replace("<string>", self.input))
         for line in trace:
-            if index == (len(trace) - 2):
-                print(line.replace("<string>", self.input))
-            else:
-                print(line)
-            index += 1
+            print(line)
+
 
     # parsing/processing
     def parse(self):
         self.__reset_internal()
         self.check_deprecation()
         # open the input file
-        input_file = io.open(os.path.join(self.input), 'r', encoding=self.readEncoding)
         try:
-            # process the input file
-            for line in input_file:
-                self.__linenum += 1
-                # to squelch or not to squelch
-                squelch, metaData = self.lexer(line)
-                # process and output
-                if self.removeMeta is True:
-                    if metaData is True or squelch is True:
+            with io.open(os.path.join(self.input), 'r', encoding=self.readEncoding) as input_file:
+                # process the input file
+                for line in input_file:
+                    self.__linenum += 1
+                    # to squelch or not to squelch
+                    squelch, metaData = self.lexer(line)
+                    # process and output
+                    if self.removeMeta is True:
+                        if metaData is True or squelch is True:
+                            continue
+                    if squelch is True:
+                        if metaData:
+                            self.__outputBuffer += self.escape + line
+                        else:
+                            self.__outputBuffer += self.escape[0] + line
                         continue
-                if squelch is True:
-                    if metaData:
-                        self.__outputBuffer += self.escape + line
-                    else:
-                        self.__outputBuffer += self.escape[0] + line
-                    continue
-                if squelch is False:
-                    self.__outputBuffer += line
-                    continue
+                    if squelch is False:
+                        self.__outputBuffer += line
+                        continue
         finally:
-            input_file.close()
             #Warnings for unclosed #ifdef blocks
             if self.__ifblocks:
                 print('Warning: Number of unclosed Ifdefblocks: ', len(self.__ifblocks))
@@ -295,12 +271,12 @@ class preprocessor:
             # set file name
             if self.output == '':
                 self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
-            # open file for output
-            output_file = io.open(self.output, 'w', encoding=self.writeEncoding)
+
             # write post-processed code to file
-            output_file.write(self.__outputBuffer)
+            with io.open(self.output, 'w', encoding=self.writeEncoding) as output_file:
+                output_file.write(self.__outputBuffer)
         finally:
-            output_file.close()
+            pass
 
         if self.run:
             # if this module is loaded as a library override the import
@@ -335,9 +311,8 @@ class preprocessor:
     # postprocessor - on-the-fly execution
     def on_the_fly(self):
         try:
-            f = io.open(self.output, "r", encoding=self.readEncoding)
-            exec(f.read())
-            f.close()
+            with io.open(self.output, "r", encoding=self.readEncoding) as f:
+                exec(f.read())
         except:
             self.rewrite_traceback()
 
