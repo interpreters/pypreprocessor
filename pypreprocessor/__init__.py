@@ -3,7 +3,7 @@
 
 __author__ = 'Evan Plaice'
 __coauthor__ = 'Hendi O L, Epikem'
-__version__ = '0.7.7'
+__version__ = '0.8'
 
 import sys
 import os
@@ -37,6 +37,10 @@ class preprocessor:
         self.__reset_internal()
 
     def check_deprecation(self):
+        """
+            Deprecation checks for older implementation of this library
+        
+        """
         def deprecation(message):
             import warnings
             warnings.simplefilter('always', DeprecationWarning)
@@ -69,7 +73,6 @@ class preprocessor:
                     print('Unknown mode : ' + str(self.mode))
             deprecation(msg)
 
-    # reseting internal things to parse a second file
     def __reset_internal(self):
         self.__linenum = 0
         self.__excludeblock = False
@@ -77,17 +80,38 @@ class preprocessor:
         self.__ifconditions = [] # contains the if conditions
         self.__outputBuffer = ''
 
-    # the #define directive
-    def define(self, define):
+    def define(self, define, val=None):
+        """
+            Adds variable definition to the store as expected from a #defined directive.
+            The directive can contains no value as it would be tested with a #ifdef directive or 
+            with a value for an evaluation as in an #if directive.
+        
+        :params
+            define (str): definition name
+            
+            val (str): definition value when it exists. Default is None
+        """
         self.defines[define]=val
 
-    # the #undef directive
     def undefine(self, define):
+        """
+            Removes variable definition from store as expected from an #undef directive
+
+        :params
+            define (str): definition name
+            
+        """
         if define in self.defines:
             self.defines.pop(define)
 
-    # search: if define is defined
     def search_defines(self, define):
+        """
+            Checks variable is defined as used in #ifdef, #ifnotdef & #elseif directives
+
+        :params
+            define (str): definition name
+            
+        """
         return define in self.defines
 
     def evaluate(self, line):
@@ -100,10 +124,16 @@ class preprocessor:
         """
         return eval(line, self.defines)
 
-    #returning: validness of #ifdef #else block
     def __validate_ifs(self):
+        """
+            Evaluate if the successive #ifs block are validated for the current position
+
+        :return
+            ifs (bool): True if all ifs condition are validated
+
+        """
         # no ifs mean we pass else check all ifs are True
-        return not self.__ifblocks and all(self.__ifblocks)
+        return not self.__ifblocks or all(self.__ifblocks)
 
     def __is_directive(self, line, directive, *size):
         """
@@ -124,9 +154,20 @@ class preprocessor:
             return True
         return False
 
-    # evaluate
     def lexer(self, line):
-    # return values are (squelch, metadata)
+        """
+            Analyse the `line`. This method attempts to find a known directive and, when found, to 
+            understand it and to perform appropriate action.
+
+        :params
+            line (str): line of code to analyse
+
+        :return
+            exclude (bool): should the line be excluded in the final output?
+
+            metadata (bool): is this line a directive?
+
+        """
         if not (self.__ifblocks or self.__excludeblock):
             if 'pypreprocessor.parse()' in line:
                 return True, True
@@ -217,19 +258,37 @@ class preprocessor:
 
     # error handling
     def exit_error(self, directive):
+        """
+            Prints error and interrupts execution
+
+        :params
+            directive (str): faulty directive
+            
+        """
         print('File: "' + self.input + '", line ' + str(self.__linenum))
         print('SyntaxError: Invalid ' + directive + ' directive')
         sys.exit(1)
 
     def rewrite_traceback(self):
+        """
+            Dumps traceback but with the input file name included
+
+        """
         trace = traceback.format_exc().splitlines()
         trace[-2]=trace[-2].replace("<string>", self.input))
         for line in trace:
             print(line)
 
-
-    # parsing/processing
     def parse(self):
+        """
+            Main method:
+            - reset internal counters/values
+            - check & warn about deprecation
+            - starts the parsing of the input file
+            - warn of unclosed #ifdef blocks if any
+            - trigger post-process activities
+
+        """
         self.__reset_internal()
         self.check_deprecation()
         # open the input file
@@ -259,7 +318,6 @@ class preprocessor:
                     select = input('Do you want more Information? ')
                 except SyntaxError:
                     select = 'no'
-                select = select.lower()
                 if select.lower() in ('yes', 'true', 'y', '1'):
                     print('Name of input and output file: ', self.input, ' ', self.output)
                     for i, item in enumerate(self.__ifconditions):
@@ -270,11 +328,18 @@ class preprocessor:
                         print('Block:', item, ' is in condition: ', cond)
         self.post_process()
 
-    # post-processor
     def post_process(self):
+        """
+            Perform post-parsing activities:
+            - write output file from parsing.
+            - override import if requested or attempt execution with its content
+            - remove output file if no save was requested
+            - force exit if resume was not requested
+
+        """
         try:
             # set file name
-            if self.output == '':
+            if not self.output:
                 self.output = self.input[0:-len(self.input.split('.')[-1])-1]+'_out.'+self.input.split('.')[-1]
 
             # write post-processed code to file
@@ -302,6 +367,10 @@ class preprocessor:
 
     # postprocessor - override an import
     def override_import(self):
+        """
+            Override the import of the output of the processed file
+
+        """
         try:
             moduleName = self.input.split('.')[0]
             tmpModuleName = self.output.split('.')[0]
@@ -317,6 +386,10 @@ class preprocessor:
 
     # postprocessor - on-the-fly execution
     def on_the_fly(self):
+        """
+            Execute output of the processed file
+
+        """
         try:
             with io.open(self.output, "r", encoding=self.readEncoding) as f:
                 exec(f.read())
