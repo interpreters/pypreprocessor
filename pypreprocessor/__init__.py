@@ -2,7 +2,7 @@
 # pypreprocessor.py
 
 __author__ = 'Evan Plaice'
-__coauthor__ = 'Hendi O L, Epikem'
+__coauthor__ = 'Hendi O L, Epikem, Laurent Pinson'
 __version__ = '0.8'
 
 import sys

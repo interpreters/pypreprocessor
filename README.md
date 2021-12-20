@@ -75,6 +75,11 @@ The syntax for pypreprocessor uses a select subset of the stanard c-style prepro
 #ifdef constant
 ```
 
+* makes the subsequent block of code available if the specified condition is set
+```python
+#if boolean_condition
+```
+
 * makes the subsequent block of code available if all of the preceding #ifdef statements return false
 ```python
 #else
