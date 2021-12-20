@@ -12,15 +12,24 @@ import imp
 import io
 import collections
 
+#support for <=0.7.7
+class customDict(dict):
+    def append(self, var):
+        self[var]=None
+
 
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='', defines={}, removeMeta=False, 
                  escapeChar=None, mode=None, escape='#', run=True, resume=False, save=True):
         # public variables
+        self.defines = customDict()
         #support for <=0.7.7
         if isinstance(defines, collections.Sequence):
-            defines = {x:None for x in defines} 
-        self.defines = defines
+            for x in defines:
+                self.defines.append(x)
+        else:
+            for x,y in defines:
+                self.define(x,y)
         self.input = inFile
         self.output = outFile
         self.removeMeta = removeMeta
@@ -30,7 +39,7 @@ class preprocessor:
         self.run = run
         self.resume = resume
         self.save = save
-        self.readEncoding = sys.stdin.encoding
+        self.readEncoding = sys.stdin.encoding 
         self.writeEncoding = sys.stdout.encoding
 
         # private variables
@@ -91,6 +100,12 @@ class preprocessor:
             
             val (str): definition value when it exists. Default is None
         """
+        # try conversion for number else evaluate() might fail
+        try:
+            val = int(val)
+        except:
+            # assume val is string 
+            pass    
         self.defines[define]=val
 
     def undefine(self, define):
@@ -122,7 +137,11 @@ class preprocessor:
             line (str): definition name
             
         """
-        return eval(line, self.defines)
+        try:
+            return eval(line, self.defines)
+        except BaseException as e:
+            print(str(e))
+            self.exit_error(self.escape + 'if')
 
     def __validate_ifs(self):
         """
@@ -261,9 +280,12 @@ class preprocessor:
 
         else: 
             # unknown directive or comment
-            if len(line.split()[0]) > 1:
+            # escapechar + space ==> comment
+            # starts with #!/ ==> shebang
+            # else print warning
+            if len(line.split()[0]) > 1 and not line.startswith('#!/'):
                 print('Warning unknown directive or comment starting with ', \
-                        line.split()[0], self.input, self.__linenum)
+                        line.split()[0], self.input, self.__linenum + 1)
 
         return False, True
 
@@ -276,7 +298,7 @@ class preprocessor:
             directive (str): faulty directive
             
         """
-        print('File: "' + self.input + '", line ' + str(self.__linenum))
+        print('File: "' + self.input + '", line ' + str(self.__linenum + 1))
         print('SyntaxError: Invalid ' + directive + ' directive')
         sys.exit(1)
 
@@ -286,7 +308,7 @@ class preprocessor:
 
         """
         trace = traceback.format_exc().splitlines()
-        trace[-2]=trace[-2].replace("<string>", self.input))
+        trace[-2]=trace[-2].replace("<string>", self.input)
         for line in trace:
             print(line)
 
