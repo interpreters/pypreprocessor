@@ -182,6 +182,7 @@ pypreprocessor.run = True / False
 pypreprocessor.resume = True / False
 pypreprocessor.save = True / False
 pypreprocessor.overload = True / False
+pypreprocessor.quiet = True / False
 ```
 set the options of the preprocessor:
 
@@ -189,6 +190,7 @@ set the options of the preprocessor:
 * resume: Return after a file is preprocessed and can preprocess a next file if true. Default is false
 * save: Save preprocessed code if true. Default is true
 * overload: Any defines added to the preprocessor will overload existing defines. Default is false
+* quiet: no warning about ununderstood directives or missing #indef
 
 ```python
 pypreprocessor.input = 'inputFile.py'

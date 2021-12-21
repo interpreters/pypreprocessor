@@ -22,7 +22,7 @@ class customDict(dict):
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='', defines={}, removeMeta=False, 
                  escapeChar=None, mode=None, escape='#', run=True, resume=False, 
-                 save=True, overload=True):
+                 save=True, overload=True, quiet=False):
         # public variables
         self.defines = customDict()
         #support for <=0.7.7
@@ -42,6 +42,7 @@ class preprocessor:
         self.resume = resume
         self.save = save
         self.overload = overload
+        self.quiet = quiet
         self.readEncoding = sys.stdin.encoding 
         self.writeEncoding = sys.stdout.encoding
 
@@ -303,8 +304,9 @@ class preprocessor:
                     self.__ifblocks.pop(-1)
                     self.__ifconditions.pop(-1)
             else:
-                print('Warning trying to remove more blocks than present', \
-                    self.input, self.__linenum)
+                if not self.quiet:
+                    print('Warning trying to remove more blocks than present', 
+                          self.input, self.__linenum)
                 self.__ifblocks = []
                 self.__ifconditions = []
 
@@ -313,8 +315,8 @@ class preprocessor:
             # escapechar + space ==> comment
             # starts with #!/ ==> shebang
             # else print warning
-            if len(line.split()[0]) > 1 and not line.startswith('#!/'):
-                print('Warning unknown directive or comment starting with ', \
+            if len(line.split()[0]) > 1 and not line.startswith('#!/') and not self.quiet:
+                print('Warning unknown directive or comment starting with ', 
                         line.split()[0], self.input, self.__linenum + 1)
 
         return False, True
@@ -374,7 +376,7 @@ class preprocessor:
                         continue
         finally:
             #Warnings for unclosed #ifdef blocks
-            if self.__ifblocks:
+            if self.__ifblocks and not self.quiet:
                 print('Warning: Number of unclosed Ifdefblocks: ', len(self.__ifblocks))
                 print('Can cause unwished behaviour in the preprocessed code, preprocessor is safe')
                 try:
