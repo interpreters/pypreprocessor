@@ -27,7 +27,7 @@ args = parser.parse_args()
 p=preprocessor(inFile=args.input, defines=args.define, mode=None, removeMeta=args.removeMeta, escapeChar=None, 
                run=args.run, resume=False, save=True, overload=args.overload, quiet=args.quiet)
 if args.output:
-    p.define = args.output
+    p.output = args.output
 if args.escape:
     p.escape = args.escape
 

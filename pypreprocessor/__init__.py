@@ -317,6 +317,12 @@ class preprocessor:
                     print('Warning trying to remove more blocks than present', 
                           self.input, self.__linenum)
 
+        elif self.__is_directive(line, 'error'):
+            if self.__validate_ifs():
+                print('File: "' + self.input + '", line ' + str(self.__linenum + 1))
+                print('Error directive reached')
+                sys.exit(1)
+
         else: 
             # escapechar + space ==> comment
             # starts with #!/ ==> shebang
