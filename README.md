@@ -190,7 +190,7 @@ set the options of the preprocessor:
 * resume: Return after a file is preprocessed and can preprocess a next file if true. Default is false
 * save: Save preprocessed code if true. Default is true
 * overload: Any defines added to the preprocessor will overload existing defines. Default is false
-* quiet: no warning about ununderstood directives or missing #indef
+* quiet: no warning about not understood directives or missing #indef
 
 ```python
 pypreprocessor.input = 'inputFile.py'

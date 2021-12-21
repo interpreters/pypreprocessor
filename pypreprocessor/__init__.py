@@ -3,7 +3,7 @@
 
 __author__ = 'Evan Plaice'
 __coauthor__ = 'Hendi O L, Epikem, Laurent Pinson'
-__version__ = '0.8'
+__version__ = '1.0'
 
 import sys
 import os
@@ -20,17 +20,19 @@ class customDict(dict):
 
 
 class preprocessor:
+    __overloaded = []
+    defines = customDict()
+
     def __init__(self, inFile=sys.argv[0], outFile='', defines={}, removeMeta=False, 
                  escapeChar=None, mode=None, escape='#', run=True, resume=False, 
                  save=True, overload=True, quiet=False):
         # public variables
-        self.defines = customDict()
-        #support for <=0.7.7
+        # support for <=0.7.7
         if isinstance(defines, collections.Sequence):
             for x in defines:
-                self.define(x)
+                self.define(*x.split(':'))
         else:
-            for x,y in defines:
+            for x,y in defines.items():
                 self.define(x,y)
         self.input = inFile
         self.output = outFile
@@ -89,11 +91,15 @@ class preprocessor:
     def __reset_internal(self):
         self.__linenum = 0
         self.__excludeblock = False
-        self.__ifblocks = [] # contains the evaluated if conditions 
-        self.__ifconditions = [] # contains the if conditions
+        # contains the evaluated if conditions
+        # due to the introduction of #elif, elements of __ifblocks are duos of boolean
+        # the 1st is the evaluation of the current #if or #elif or #else
+        # the 2nd indicates if at least one #if or #elif was True in the whole #if/#endif block
+        self.__ifblocks = []  
+        # contains the if conditions
+        self.__ifconditions = [] 
         self.__outputBuffer = ''
         self.__overloaded = list(self.defines.keys()) if self.overload else []
-
 
     def define(self, name, val=True):
         """
@@ -164,7 +170,7 @@ class preprocessor:
 
         """
         # no ifs mean we pass else check all ifs are True
-        return not self.__ifblocks or all(self.__ifblocks)
+        return not self.__ifblocks or all(x[0] for x in self.__ifblocks)
 
     def __is_directive(self, line, directive, *size):
         """
@@ -243,41 +249,43 @@ class preprocessor:
         elif self.__is_directive(line, 'ifdefnot', 2) or \
         self.__is_directive(line, 'ifnotdef', 2) or \
         self.__is_directive(line, 'ifndef', 2):
-            self.__ifblocks.append(not self.__is_defined(line.split()[1]))
+            _check = not self.__is_defined(line.split()[1])
+            self.__ifblocks.append([ _check, _check])
             self.__ifconditions.append(line.split()[1])
 
         elif self.__is_directive(line, 'ifdef', 2):
-            self.__ifblocks.append(self.__is_defined(line.split()[1]))
+            _check = self.__is_defined(line.split()[1])
+            self.__ifblocks.append([ _check, _check])
             self.__ifconditions.append(line.split()[1])
 
         elif self.__is_directive(line, 'if'):
-            self.__ifblocks.append(self.__evaluate_if(' '.join(line.split()[1:])))
+            _check = self.__evaluate_if(' '.join(line.split()[1:]))
+            self.__ifblocks.append([ _check, _check])
             self.__ifconditions.append(' '.join(line.split()[1:]))
 
         # since in version <=0.7.7, it didn't handle #if it should be #elseifdef instead.
         # kept elseif with 2 elements for retro-compatibility (equivalent to #elseifdef).
         elif self.__is_directive(line, 'elseif') or \
         self.__is_directive(line, 'elif'):
-            # do else
-            self.__ifblocks[-1] = not self.__ifblocks[-1] 
-            # do if
+            _cur, _whole = self.__ifblocks[-1]
             if len(line.split()) == 2:
                 #old behaviour
-                self.__ifblocks[-1] = self.__is_defined(line.split()[1]) 
+                _check = self.__is_defined(line.split()[1])
             else:
                 #new behaviour
-                self.__ifblocks[-1] = self.__evaluate_if(' '.join(line.split()[1:]))
-            self.__ifconditions.append(' '.join(line.split()[1:]))
+                _check = self.__evaluate_if(' '.join(line.split()[1:]))
+            self.__ifblocks[-1]=[ not _whole and _check, _whole or _check ]
+            self.__ifconditions[-1]=' '.join(line.split()[1:])
 
         elif self.__is_directive(line, 'elseifdef', 2):
-            # do else
-            self.__ifblocks[-1] = not self.__ifblocks[-1] 
-            # do if
-            self.__ifblocks[-1]=self.__is_defined(line.split()[1])
-            self.__ifconditions.append(' '.join(line.split()[1:]))
+            _cur, _whole = self.__ifblocks[-1]
+            _check = self.__is_defined(line.split()[1])
+            self.__ifblocks[-1]=[ not _whole and _check, _whole or _check ]
+            self.__ifconditions[-1]=' '.join(line.split()[1:])
 
         elif self.__is_directive(line, 'else', 1):
-            self.__ifblocks[-1] = not self.__ifblocks[-1] #opposite of last if
+            _cur, _whole = self.__ifblocks[-1]
+            self.__ifblocks[-1] = [not _whole, not _whole] #opposite of the whole if/elif block
 
         elif self.__is_directive(line, 'endififdef', 2):
             # do endif
@@ -299,19 +307,17 @@ class preprocessor:
             except ValueError as VE:
                 number = 1
 
-            if len(self.__ifconditions) >= number:
-                for i in range(0, number):
+            try:
+                while number:
                     self.__ifblocks.pop(-1)
                     self.__ifconditions.pop(-1)
-            else:
+                    number-=1
+            except:
                 if not self.quiet:
                     print('Warning trying to remove more blocks than present', 
                           self.input, self.__linenum)
-                self.__ifblocks = []
-                self.__ifconditions = []
 
         else: 
-            # unknown directive or comment
             # escapechar + space ==> comment
             # starts with #!/ ==> shebang
             # else print warning
