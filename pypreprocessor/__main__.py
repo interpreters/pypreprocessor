@@ -16,12 +16,14 @@ parser.add_argument("-m", "--removeMeta", help="remove meta lines from the outpu
                     action='store_true', default=False)
 parser.add_argument("-e", "--escape", help="define the escape sequence to use. Default is #")
 parser.add_argument("-d", "--define", help="list of variable to define", nargs='*')
+parser.add_argument("-o", "--overload", help="overload variable definition in the file by those \
+                    provided by --define", action='store_true', default=False)
 parser.add_argument("input", help="input file.")
 parser.add_argument("output", nargs='?', help="output file. Default is <input_basename>_out.<input_extension>")
 args = parser.parse_args()
 
 p=preprocessor(inFile=args.input, mode=None, removeMeta=args.removeMeta, escapeChar=None, 
-               run=args.run, resume=False, save=True)
+               run=args.run, resume=False, save=True, overload=args.overload)
 if args.output:
     p.define = args.output
 if args.define:

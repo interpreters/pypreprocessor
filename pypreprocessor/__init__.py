@@ -11,22 +11,24 @@ import traceback
 import imp
 import io
 import collections
+import re
 
 #support for <=0.7.7
 class customDict(dict):
     def append(self, var):
-        self[var]=None
+        self[var]=True
 
 
 class preprocessor:
     def __init__(self, inFile=sys.argv[0], outFile='', defines={}, removeMeta=False, 
-                 escapeChar=None, mode=None, escape='#', run=True, resume=False, save=True):
+                 escapeChar=None, mode=None, escape='#', run=True, resume=False, 
+                 save=True, overload=True):
         # public variables
         self.defines = customDict()
         #support for <=0.7.7
         if isinstance(defines, collections.Sequence):
             for x in defines:
-                self.defines.append(x)
+                self.define(x)
         else:
             for x,y in defines:
                 self.define(x,y)
@@ -39,6 +41,7 @@ class preprocessor:
         self.run = run
         self.resume = resume
         self.save = save
+        self.overload = overload
         self.readEncoding = sys.stdin.encoding 
         self.writeEncoding = sys.stdout.encoding
 
@@ -88,15 +91,20 @@ class preprocessor:
         self.__ifblocks = [] # contains the evaluated if conditions 
         self.__ifconditions = [] # contains the if conditions
         self.__outputBuffer = ''
+        self.__overloaded = list(self.defines.keys()) if self.overload else []
 
-    def define(self, define, val=None):
+
+    def define(self, name, val=True):
         """
-            Adds variable definition to the store as expected from a #defined directive.
+            Adds variable definition to the store as expected from a #define directive.
             The directive can contains no value as it would be tested with a #ifdef directive or 
             with a value for an evaluation as in an #if directive.
+
+            Note: if the `name` was part of the initial definition and `overload` was set to 
+            True, this new definition will be skipped
         
         :params
-            define (str): definition name
+            name (str): definition name
             
             val (str): definition value when it exists. Default is None
         """
@@ -106,7 +114,8 @@ class preprocessor:
         except:
             # assume val is string 
             pass    
-        self.defines[define]=val
+        if name not in self.__overloaded:
+            self.defines[name]=val
 
     def undefine(self, define):
         """
@@ -119,7 +128,7 @@ class preprocessor:
         if define in self.defines:
             self.defines.pop(define)
 
-    def search_defines(self, define):
+    def __is_defined(self, define):
         """
             Checks variable is defined as used in #ifdef, #ifnotdef & #elseif directives
 
@@ -129,7 +138,7 @@ class preprocessor:
         """
         return define in self.defines
 
-    def evaluate(self, line):
+    def __evaluate_if(self, line):
         """
             Evaluate the content of a #if, #elseif, #elif directive
 
@@ -138,7 +147,9 @@ class preprocessor:
             
         """
         try:
-            return eval(line, self.defines)
+            # replace C-style bool format by Python's
+            line = line.replace('&&', 'and').replace('||', 'or').replace('!','not ')
+            return eval(line, self.defines) or False
         except BaseException as e:
             print(str(e))
             self.exit_error(self.escape + 'if')
@@ -173,6 +184,21 @@ class preprocessor:
             return True
         return False
 
+    def __cleanup_line(self, line):
+        """
+            Clean a line of anything that should not impact parsing such as C-style comment
+
+        :params:
+            line (str): line to check
+
+        :return
+            line (str): cleaned line
+        
+        """
+        line= re.sub('\s*/\*.*\*/\s+', '', line) #remove /* */ C-style comment
+        line= re.sub('\s*//.*', '', line) #remove // C-style comment
+        return line
+
     def lexer(self, line):
         """
             Analyse the `line`. This method attempts to find a known directive and, when found, to 
@@ -187,6 +213,7 @@ class preprocessor:
             metadata (bool): is this line a directive?
 
         """
+        line = line.strip()
         if not (self.__ifblocks or self.__excludeblock):
             if 'pypreprocessor.parse()' in line:
                 return True, True
@@ -196,7 +223,10 @@ class preprocessor:
             # exclude=True if we are in an exclude block or the ifs are not validated
             return self.__excludeblock or not self.__validate_ifs(), False
 
-        elif self.__is_directive(line, 'define', 2,3):
+        # strip line of any C-style comment
+        line = self.__cleanup_line(line)
+
+        if self.__is_directive(line, 'define', 2,3):
             self.define(*line.split()[1:])
 
         elif self.__is_directive(line, 'undef', 2):
@@ -212,15 +242,15 @@ class preprocessor:
         elif self.__is_directive(line, 'ifdefnot', 2) or \
         self.__is_directive(line, 'ifnotdef', 2) or \
         self.__is_directive(line, 'ifndef', 2):
-            self.__ifblocks.append(not self.search_defines(line.split()[1]))
+            self.__ifblocks.append(not self.__is_defined(line.split()[1]))
             self.__ifconditions.append(line.split()[1])
 
         elif self.__is_directive(line, 'ifdef', 2):
-            self.__ifblocks.append(self.search_defines(line.split()[1]))
+            self.__ifblocks.append(self.__is_defined(line.split()[1]))
             self.__ifconditions.append(line.split()[1])
 
         elif self.__is_directive(line, 'if'):
-            self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
+            self.__ifblocks.append(self.__evaluate_if(' '.join(line.split()[1:])))
             self.__ifconditions.append(' '.join(line.split()[1:]))
 
         # since in version <=0.7.7, it didn't handle #if it should be #elseifdef instead.
@@ -232,18 +262,18 @@ class preprocessor:
             # do if
             if len(line.split()) == 2:
                 #old behaviour
-                self.__ifblocks.append(self.search_defines(line.split()[1]))
+                self.__ifblocks[-1] = self.__is_defined(line.split()[1]) 
             else:
                 #new behaviour
-                self.__ifblocks.append(self.evaluate(' '.join(line.split()[1:])))
+                self.__ifblocks[-1] = self.__evaluate_if(' '.join(line.split()[1:]))
             self.__ifconditions.append(' '.join(line.split()[1:]))
 
         elif self.__is_directive(line, 'elseifdef', 2):
             # do else
             self.__ifblocks[-1] = not self.__ifblocks[-1] 
-            # do ifdef
-            self.__ifblocks.append(self.search_defines(line.split()[1]))
-            self.__ifconditions.append(line.split()[1])
+            # do if
+            self.__ifblocks[-1]=self.__is_defined(line.split()[1])
+            self.__ifconditions.append(' '.join(line.split()[1:]))
 
         elif self.__is_directive(line, 'else', 1):
             self.__ifblocks[-1] = not self.__ifblocks[-1] #opposite of last if
@@ -254,7 +284,7 @@ class preprocessor:
                 self.__ifblocks.pop(-1)
                 self.__ifconditions.pop(-1)
             # do ifdef
-            self.__ifblocks.append(self.search_defines(line.split()[1]))
+            self.__ifblocks.append(self.__is_defined(line.split()[1]))
             self.__ifconditions.append(line.split()[1])
 
         elif self.__is_directive(line, 'endifall', 1):
