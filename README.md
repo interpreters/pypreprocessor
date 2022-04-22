@@ -55,17 +55,16 @@
 
 ## Syntax
 
-The syntax for pypreprocessor uses a select subset of the stanard c-style preprocessor directives, and then some...
+The syntax for pypreprocessor uses a select subset of the standard c-style preprocessor directives, and then some...
 
 **Supported directives**
 
-* define non-value constants used by the preprocessor
+* defines constants (valued or not) used by the preprocessor
 ```python
-#define constant
+#define constant [value]
 ```
 
-
-* remove a non-value constant from the list of defined constants
+* removes a constant from the list of defined constants
 ```python
 #undef constant
 ```
@@ -75,21 +74,46 @@ The syntax for pypreprocessor uses a select subset of the stanard c-style prepro
 #ifdef constant
 ```
 
-* makes the subsequent block of code available if all of the preceding #ifdef statements return false
+* makes the subsequent block of code available if the specified constant is not set
+```python
+#ifndef constant
+```
+
+* makes the subsequent block of code available if the specified condition returns true
+```python
+#if boolean_condition
+```
+
+* makes the subsequent block of code available if all of the preceding #ifdef, #elif, #if statements returns false
 ```python
 #else
+```
+
+* makes the subsequent block of code available if all of the preceding #ifdef, #elif, #if statements return false and the specifified condition returns true
+```python
+#elif boolean_condition
 ```
 
 * required to close out an #ifdef/#else block
 ```python
 #endif
 ```
+
+* Interrupts execution and returns error when reached
+```python
+#error
+```
+
+**Unofficial supported directives**
+
+Unofficial directives exist to ease writing long files but should not be used in file that could be preprocessed without pypreprocessor 
+
 * possibility to close all open blocks
 ```python
 #endifall
 ```
 
-* exclude the subsequent block of code (conditionals not included). I know it doesn't fit into the standard set of c-style directives but it's too handy to exclude (no pun).
+* excludes the subsequent block of code (conditionals not included). I know it doesn't fit into the standard set of c-style directives but it's too handy to exclude (no pun).
 ```python
 #exclude
 ```
@@ -97,6 +121,50 @@ The syntax for pypreprocessor uses a select subset of the stanard c-style prepro
 * required to close out an #exclude block
 ```python
 #endexclude
+```
+
+* Attempts closing <num> #ifdef/#else blocks
+```python
+#endif<num>
+```
+
+* Similar to #ifndef
+```python
+#ifnotdef constant
+```
+
+* Similar to #ifndef
+```python
+#ifdefnot constant
+```
+
+* Similar to #elif boolean_condition
+```python
+#elseif boolean_condition
+```
+
+* Similar to #elif constant
+```python
+#elseifdef constant
+```
+
+* Similar to #endif followed by #ifdef constant
+```python
+#endififdef constant
+```
+
+**Unsupported directives**
+
+Unsupported directives are not handled by pypreprocessor and concidered as comment
+
+* Inserts a particuliar header from another file. This has no use in Python
+```python
+#include
+```
+
+* Issues special commands to the compiler, using a standardized method. This has no use in Python
+```python
+#pragma
 ```
 
 **Options**
@@ -113,12 +181,16 @@ add defines to the preprocessor programmatically, this allows the source file to
 pypreprocessor.run = True / False
 pypreprocessor.resume = True / False
 pypreprocessor.save = True / False
+pypreprocessor.overload = True / False
+pypreprocessor.quiet = True / False
 ```
 set the options of the preprocessor:
 
 * run: Run the preprocessed code if true. Default is true
 * resume: Return after a file is preprocessed and can preprocess a next file if true. Default is false
 * save: Save preprocessed code if true. Default is true
+* overload: Any defines added to the preprocessor will overload existing defines. Default is false
+* quiet: no warning about not understood directives or missing #indef
 
 ```python
 pypreprocessor.input = 'inputFile.py'
